@@ -1172,19 +1172,19 @@ async function showTeacherPortal(){
   showScreen('teacherScreen');
   toast('Loading schedule…','info');
   
-  // FIRST: Load from localStorage (synchronous, reliable)
-  console.log('📂 Loading from cache...');
+  // Load from localStorage ONLY (Teacher Portal is offline-first)
+  console.log('📂 Loading teacher portal from cache...');
   const cache = loadLocalCache();
   if (cache && cache.records && cache.records.length > 0) {
     records = cache.records;
     SETTINGS = cache.SETTINGS || SETTINGS;
-    console.log('✅ Loaded from cache:', records.length, 'records');
+    console.log('✅ Teacher portal loaded:', records.length, 'records from localStorage');
   } else {
-    console.log('ℹ️ No local cache found');
+    console.warn('⚠️ No cached data - teacher portal will be empty');
+    records = [];
   }
   
-  // THEN: Populate dropdowns with whatever data we have
-  console.log('📊 Populating grades from records:', records.length);
+  // Populate dropdowns immediately
   populateTGrade();
   updateDayCountStatus();
   
