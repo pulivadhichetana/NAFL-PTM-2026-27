@@ -1815,9 +1815,25 @@ function toggleDay(n){
   updateDayCountStatus();
 }
 function populateTGrade(){
+  console.log('📊 populateTGrade called. Current records:', records.length);
+  
+  // If no records in memory, try to load from cache
+  if(!records || records.length === 0){
+    console.log('⚠️ No records in memory, loading from cache...');
+    const cache = loadLocalCache();
+    if(cache && cache.records && cache.records.length > 0){
+      records = cache.records;
+      console.log('✅ Loaded from cache:', records.length, 'records');
+    } else {
+      console.error('❌ No data found anywhere!');
+      return;
+    }
+  }
+  
   const sel=document.getElementById('tGrade');
   const prev=sel.value;
   const grades=[...new Set(records.map(r=>r.grade))].sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
+  console.log('📚 Grades found:', grades.length, grades);
   sel.innerHTML='<option value="">Select grade</option>'+grades.map(g=>`<option value="${g}"${g===prev?' selected':''}>${g}</option>`).join('');
   refreshTSection();
 }
