@@ -15,7 +15,7 @@
 *{box-sizing:border-box}
 body{margin:0;font-family:'DM Sans',sans-serif;color:var(--ink)}
 .fd{font-family:'Fraunces',serif}
-.screen{display:none}.screen.active{display:block}
+.hidden{display:none!important}.screen{display:none}.screen.active{display:block}
 .gs{box-shadow:0 18px 50px rgba(25,75,81,.10)}
 .fr:focus{outline:3px solid rgba(31,138,138,.3);outline-offset:2px}
 .ts::-webkit-scrollbar{height:6px;width:6px}.ts::-webkit-scrollbar-thumb{background:#bfd6d3;border-radius:99px}
@@ -328,6 +328,35 @@ body{margin:0;font-family:'DM Sans',sans-serif;color:var(--ink)}
           <button onclick="document.getElementById('specialApptModal').classList.add('hidden')" class="flex-1 border border-[#dce8e7] rounded-xl py-2.5 text-sm text-[#5d747a]">Cancel</button>
         </div>
         <button id="removeApptBtn" onclick="removeSpecialAppt()" class="hidden w-full text-red-600 text-xs py-2 hover:underline">🗑️ Remove special appointment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT TIMING MODAL -->
+  <div id="editTimingModal" class="hidden fixed inset-0 modal-bg z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-[22px] p-7 w-full max-w-sm shadow-2xl">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-2xl">✎</span>
+        <div>
+          <h3 class="fd text-lg nafl-blue">Edit Student Timing</h3>
+          <p id="editTimingStudentName" class="text-xs text-[#5d747a]"></p>
+        </div>
+      </div>
+      <p class="text-xs text-[#5d747a] bg-[#f0f5ff] border border-[#1f8a8a]/20 rounded-xl px-3 py-2 mb-4">
+        Manually set or change this student's meeting time. This will override the auto-generated timing.
+      </p>
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs font-semibold text-[#5d747a] block mb-1">Meeting Time</label>
+          <input id="editTimingInput" type="text" placeholder="e.g. 9:00 a.m. – 9:15 a.m." class="w-full border border-[#dce8e7] rounded-xl px-3 py-2.5 text-sm fr outline-none">
+          <p class="text-[10px] text-[#5d747a] mt-1">Enter the time slot (any format).</p>
+        </div>
+        <div id="editTimingErr" class="hidden text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2"></div>
+        <div class="flex gap-2 pt-1">
+          <button onclick="saveEditTiming()" class="flex-1 bg-[#1f8a8a] text-white rounded-xl py-2.5 text-sm font-bold hover:bg-[#166b6b]">✓ Save Timing</button>
+          <button onclick="document.getElementById('editTimingModal').classList.add('hidden')" class="flex-1 border border-[#dce8e7] rounded-xl py-2.5 text-sm text-[#5d747a]">Cancel</button>
+        </div>
+        <button id="clearTimingBtn" onclick="clearEditTiming()" class="hidden w-full text-red-600 text-xs py-2 hover:underline">🗑️ Clear timing</button>
       </div>
     </div>
   </div>
@@ -739,7 +768,7 @@ let _nid=1;
 // ⚠️ PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE ⚠️
 // See HOW_TO_DEPLOY.html → "Connect Google Sheets Backend" for setup steps.
 // It looks like: https://script.google.com/macros/s/AKfycb.../exec
-const API_URL = 'https://script.google.com/macros/s/AKfycbyVim8bh3anDO184RV4DcgRhHXd0GJR3-CYlHdnWoqhYRaUMkgV8O3CooNMxL6ca5rb/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxXphZTQdhX-vI_eGsK19EKk89jDXb8oDyQKvjLt1tuxi5izHsYs0KMJHqrzfNQxwZb/exec';
 
 let SETTINGS = {
   schoolName:'National Academy for Learning',
@@ -825,7 +854,10 @@ async function loadFromBackend(){
     apiGet('getAuth')
   ]);
 
-  if(recRes.ok && setRes.ok && authRes.ok){
+  console.log('📊 API Response:', {recRes, setRes, authRes});
+
+  // Try API first, but fall back to cache if API returns 0 records
+  if(recRes.ok && setRes.ok && authRes.ok && recRes.data && recRes.data.length > 0){
     _apiReady=true;
     records = recRes.data || [];
     SETTINGS = setRes.data || SETTINGS;
@@ -835,15 +867,22 @@ async function loadFromBackend(){
       return Math.max(mx,n+1);
     },1);
     cacheLocally();
+    console.log('✅ Data loaded from API:', records.length, 'records');
     showConnectionBanner('online');
   } else {
-    // Backend unreachable — fall back to last local cache so the page still works
+    // API returned 0 records or failed — fall back to localStorage
     _apiReady=false;
+    console.log('⚠️ API returned 0 or failed. Checking localStorage...');
     showConnectionBanner('offline');
     const cache=loadLocalCache();
-    if(cache){
-      records=cache.records||[];
+    console.log('📂 LocalStorage check:', cache?cache.records.length:0, 'records');
+    if(cache && cache.records && cache.records.length > 0){
+      records=cache.records;
       SETTINGS=cache.SETTINGS||SETTINGS;
+      console.log('✅ Loaded from localStorage:', records.length, 'records');
+    } else {
+      console.warn('❌ No data in localStorage either!');
+      records=[];
     }
   }
 
@@ -853,6 +892,8 @@ async function loadFromBackend(){
   populateTGrade();
   applySettings();
 
+  console.log('📊 Final records count:', records.length);
+
   if(records.length){
     document.getElementById('uploadStatus').textContent=
       `✓ ${records.length} records loaded ${_apiReady?'from shared database':'from local cache (offline)'}.`;
@@ -861,29 +902,48 @@ async function loadFromBackend(){
         ?`${records.filter(r=>r.timing).length} students already scheduled. Ready.`
         :'Records loaded. Click Generate Schedule.';
     document.getElementById('statFinal').textContent=records.length;
+  } else {
+    console.error('❌ NO RECORDS FOUND! Dropdowns will be empty.');
+    document.getElementById('uploadStatus').textContent='No student data found. Please upload in Admin Portal.';
   }
 }
 
-// ── Save records to the shared backend (debounced so rapid edits don't spam the API) ──
+// ── Save records to localStorage (primary) and backend (optional) ──
 async function persistRecords(){
-  cacheLocally(); // always keep local fallback fresh
+  // ALWAYS save to localStorage first (this is reliable)
+  cacheLocally();
+  console.log('💾 Saved to localStorage');
+  
+  // Try to sync to API (optional - for backup)
   if(_saveInFlight){ _pendingSave=true; return; }
   _saveInFlight=true;
-  const res = await apiPost('saveRecords',{records});
-  _saveInFlight=false;
-  if(!res.ok){
-    showConnectionBanner('offline');
-    toast('⚠️ Could not save to shared database. Your data is kept locally — try again when online.','error');
-  } else {
-    showConnectionBanner('online');
+  
+  try {
+    const res = await apiPost('saveRecords',{records});
+    _saveInFlight=false;
+    if(res.ok){
+      showConnectionBanner('online');
+      console.log('✅ Also synced to Google backend');
+    } else {
+      showConnectionBanner('offline');
+      console.log('ℹ️ Data saved locally (API backup unavailable)');
+    }
+  } catch(e) {
+    _saveInFlight=false;
+    console.log('ℹ️ Data saved locally (API backup not available on GitHub)');
   }
+  
   if(_pendingSave){ _pendingSave=false; persistRecords(); }
 }
 
 async function persistSettings(){
   cacheLocally();
-  const res = await apiPost('saveSettings',{settings:SETTINGS});
-  if(!res.ok) toast('⚠️ Settings saved locally only — could not reach shared database.','error');
+  try {
+    const res = await apiPost('saveSettings',{settings:SETTINGS});
+    if(!res.ok) console.log('ℹ️ Settings saved locally (API backup unavailable)');
+  } catch(e) {
+    console.log('ℹ️ Settings saved locally (API backup not available)');
+  }
 }
 
 async function persistPassword(newPwd){
@@ -1112,6 +1172,7 @@ async function showTeacherPortal(){
   showScreen('teacherScreen');
   toast('Refreshing latest schedule…','info');
   await loadFromBackend();
+  populateTGrade();
   updateDayCountStatus();
 }
 async function refreshTeacherData(){
@@ -1429,6 +1490,12 @@ function importRows(rows,fname){
       sibling_group:'',is_sibling:false,timing:'',slot_idx:-1,status:'Imported'});
   });
   records.push(...imported);
+  
+  // ⚠️ CRITICAL: Save to localStorage IMMEDIATELY
+  cacheLocally();
+  console.log('💾 Data saved to localStorage. Records:', records.length);
+  console.log('🔍 Cache check:', localStorage.getItem(LOCAL_CACHE_KEY)?'FOUND':'NOT FOUND');
+  
   persistRecords();
   document.getElementById('statFound').textContent=rows.length;
   document.getElementById('statImported').textContent=imported.length;
@@ -1741,7 +1808,6 @@ function populateTGrade(){
   sel.innerHTML='<option value="">Select grade</option>'+grades.map(g=>`<option value="${g}"${g===prev?' selected':''}>${g}</option>`).join('');
   refreshTSection();
 }
-document.getElementById('tGrade').addEventListener('change',refreshTSection);
 function refreshTSection(){
   const g=document.getElementById('tGrade').value;
   const sel=document.getElementById('tSection');
@@ -1749,15 +1815,6 @@ function refreshTSection(){
   sel.innerHTML='<option value="">Select section</option>'+secs.map(s=>`<option value="${s}">${s}</option>`).join('');
   updateDayCountStatus();
 }
-document.getElementById('tSection').addEventListener('change',()=>{
-  // When section changes, auto-fill Day 1 with the full class size as a starting point
-  const total=getClassSize();
-  if(total>0){
-    const d1=document.getElementById('tDay1Count');
-    if(!d1.value) d1.value=total;
-  }
-  updateDayCountStatus();
-});
 
 function getClassSize(){
   const grade=document.getElementById('tGrade').value;
@@ -2673,6 +2730,7 @@ function renderAdminTable(){
       <td class="px-3 py-2 text-xs">${sibCell}</td>
       <td class="px-3 py-2"><span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium ${statusBg}">${statusLabel}</span></td>
       <td class="px-3 py-2 text-xs">${apptCell}</td>
+      <td class="px-3 py-2 text-xs"><button onclick="openEditTimingModal('${r._id}')" class="border border-dashed border-[#1f8a8a] text-[#1f8a8a] rounded px-2 py-1 text-[10px] hover:bg-[#1f8a8a] hover:text-white font-semibold" title="Edit timing">✎ Edit</button></td>
     </tr>`;
   }).join('');
 }
@@ -2715,6 +2773,56 @@ function removeSpecialAppt(){
   renderAdminTable();
   toast(`Special appointment removed for ${rec.student_name}. Re-run Generate Schedule to assign a normal slot.`,'info');
 }
+
+// ═══════════════════════════════════════════
+// EDIT TIMING FUNCTIONS
+// ═══════════════════════════════════════════
+let _editTimingTargetId='';
+function openEditTimingModal(studentId){
+  const rec=records.find(r=>r._id===studentId);
+  if(!rec) return;
+  _editTimingTargetId=studentId;
+  document.getElementById('editTimingStudentName').textContent=`${rec.student_name} — ${rec.grade} ${rec.section}`;
+  document.getElementById('editTimingInput').value=rec.timing||'';
+  document.getElementById('editTimingErr').classList.add('hidden');
+  document.getElementById('clearTimingBtn').classList.toggle('hidden',!rec.timing);
+  document.getElementById('editTimingModal').classList.remove('hidden');
+  console.log('📝 Edit timing opened for:', rec.student_name, 'Current timing:', rec.timing);
+}
+
+function saveEditTiming(){
+  const rec=records.find(r=>r._id===_editTimingTargetId);
+  if(!rec) return;
+  const timing=document.getElementById('editTimingInput').value.trim();
+  const err=document.getElementById('editTimingErr');
+  if(!timing){err.textContent='Please enter a timing or use Clear to remove it.';err.classList.remove('hidden');return;}
+  rec.timing=timing;
+  rec.status='Scheduled';
+  document.getElementById('editTimingModal').classList.add('hidden');
+  cacheLocally();
+  persistRecords();
+  renderAdminTable();
+  updateMetrics();
+  toast(`✓ Timing updated for ${rec.student_name}: ${timing}`,'success');
+  console.log('✅ Timing saved for:', rec.student_name, 'Timing:', timing);
+}
+
+function clearEditTiming(){
+  const rec=records.find(r=>r._id===_editTimingTargetId);
+  if(!rec) return;
+  if(confirm(`Clear timing for ${rec.student_name}?`)){
+    rec.timing='';
+    rec.status='Imported';
+    document.getElementById('editTimingModal').classList.add('hidden');
+    cacheLocally();
+    persistRecords();
+    renderAdminTable();
+    updateMetrics();
+    toast(`Timing cleared for ${rec.student_name}. Re-run Generate Schedule.`,'info');
+    console.log('🗑️ Timing cleared for:', rec.student_name);
+  }
+}
+
 function updateStorageIndicator(){
   try{
     const used=JSON.stringify(records).length;
@@ -2780,12 +2888,44 @@ function initializeEventListeners(){
     console.error('❌ File input element not found!');
   }
   
+  // Attach teacher portal listeners
+  const tGrade=document.getElementById('tGrade');
+  if(tGrade){
+    tGrade.addEventListener('change',refreshTSection);
+    console.log('✅ Teacher grade listener attached');
+  }
+  
+  const tSection=document.getElementById('tSection');
+  if(tSection){
+    tSection.addEventListener('change',()=>{
+      // When section changes, auto-fill Day 1 with the full class size
+      const total=getClassSize();
+      if(total>0){
+        const d1=document.getElementById('tDay1Count');
+        if(!d1.value) d1.value=total;
+      }
+      updateDayCountStatus();
+    });
+    console.log('✅ Teacher section listener attached');
+  }
+  
   // Restore admin login state if session exists
   if(sessionStorage.getItem('nafl_admin')==='true'){
     adminLoggedIn=true;
     console.log('✅ Admin session restored');
   } else {
     adminLoggedIn=false;
+  }
+  
+  // ⚠️ CRITICAL: Load cached data on page load (even before opening teacher portal)
+  console.log('📂 Attempting to load cached data on page load...');
+  const cache = loadLocalCache();
+  if(cache && cache.records && cache.records.length > 0){
+    records = cache.records;
+    SETTINGS = cache.SETTINGS || SETTINGS;
+    console.log('✅ Loaded from cache on page init:', records.length, 'records');
+  } else {
+    console.log('ℹ️ No cached data found on page load');
   }
 }
 
