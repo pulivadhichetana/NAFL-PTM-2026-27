@@ -1316,6 +1316,74 @@ function handleFile(e){
   if(ext==='csv')reader.readAsText(f);else reader.readAsArrayBuffer(f);
 }
 
+function handleFile(e){
+  // ⚠️ SECURITY: This function can only be called when admin is logged in
+  // (UI button is hidden otherwise), but verify again here.
+  if(!adminLoggedIn){
+    toast('❌ Admin login required to upload student data','error');
+    return;
+  }
+  
+  const f=e.target.files[0]; if(!f)return;
+  const ext=f.name.toLowerCase().split('.').pop();
+  
+  // Validate file type
+  if(!['csv','xls','xlsx'].includes(ext)){
+    document.getElementById('uploadStatus').textContent='❌ Error: Only CSV, XLS, or XLSX files allowed. You selected: '+ext;
+    toast('Only CSV, XLS, or XLSX files are supported','error');
+    return;
+  }
+  
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      let wb;
+      try{
+        wb=XLSX.read(ev.target.result,{type:ext==='csv'?'string':'array'});
+      }catch(parseErr){
+        document.getElementById('uploadStatus').textContent='❌ Error: Could not parse file. Make sure it\'s a valid '+ext.toUpperCase()+' file.';
+        toast('File parsing failed. Check that it\'s a valid '+ext.toUpperCase()+' file','error');
+        return;
+      }
+      
+      if(!wb.SheetNames.length){
+        document.getElementById('uploadStatus').textContent='❌ Error: No sheets found in file.';
+        toast('File has no sheets','error');
+        return;
+      }
+      
+      let bestSheet=wb.SheetNames[0];
+      let bestRows=[];
+      // Try every sheet, using raw-array parsing + manual header detection
+      for(const s of wb.SheetNames){
+        try{
+          const rows=parseSheetWithHeaderDetection(wb.Sheets[s]);
+          if(rows.length>bestRows.length){ bestRows=rows; bestSheet=s; }
+        }catch(sheetErr){
+          console.warn('Sheet parse error on '+s+': '+sheetErr.message);
+        }
+      }
+      
+      if(!bestRows.length){
+        document.getElementById('uploadStatus').textContent='❌ Error: No data rows found. Check that file has student data.';
+        toast('No valid data found in file','error');
+        return;
+      }
+      
+      showDebug(Object.keys(bestRows[0]||{}),bestSheet);
+      importRows(bestRows,f.name);
+    }catch(err){
+      document.getElementById('uploadStatus').textContent='❌ Error: '+err.message;
+      toast('Upload error: '+err.message,'error');
+      console.error('Upload error:',err);
+    }
+  };
+  reader.onerror=()=>{
+    document.getElementById('uploadStatus').textContent='❌ Error: Could not read file.';
+    toast('File read error','error');
+  };
+  if(ext==='csv')reader.readAsText(f);else reader.readAsArrayBuffer(f);
+
 // Reads a sheet as raw rows, finds the row that actually looks like a header
 // (contains recognizable column names), then builds {header: value} objects
 // from every row after it. This avoids SheetJS misdetecting the header row
