@@ -479,7 +479,7 @@ body{margin:0;font-family:'DM Sans',sans-serif;color:var(--ink)}
               <th class="px-3 py-3 font-bold">Special Appt.</th>
             </tr>
           </thead>
-          <tbody id="adminTableBody">
+          <tbody id="adminTable">
             <tr><td colspan="12" class="px-3 py-8 text-center text-[#5d747a]">Upload student data and generate schedule to see results.</td></tr>
           </tbody>
         </table>
@@ -751,6 +751,7 @@ let SETTINGS = {
 
 const ADMIN_USERNAME = 'PTMCom';
 let adminPassword = 'PTM@123'; // fallback only — real password comes from the sheet
+let adminLoggedIn = false; // ⚠️ CRITICAL: tracks if admin is currently logged in
 let _resetOTP = '';
 let _apiReady = false;
 let _saveInFlight = false;
@@ -1135,26 +1136,69 @@ function showAdminLogin(){
   document.getElementById('loginModal').classList.remove('hidden');
   setTimeout(()=>document.getElementById('loginUser').focus(),100);
 }
-function closeLogin(){ document.getElementById('loginModal').classList.add('hidden'); }
+function closeLogin(){ 
+  adminLoggedIn = false; // ⚠️ CRITICAL: Set flag to false
+  sessionStorage.removeItem('nafl_auth');
+  sessionStorage.removeItem('nafl_admin');
+  document.getElementById('loginModal').classList.add('hidden'); 
+}
 function doLogin(){
   const user=document.getElementById('loginUser').value.trim();
   const pw=document.getElementById('loginPass').value;
   const err=document.getElementById('loginErr');
+  
+  // DEBUG LOGGING
+  console.log('🔍 LOGIN DEBUG:');
+  console.log('  User entered: "' + user + '"');
+  console.log('  Expected user: "' + ADMIN_USERNAME + '"');
+  console.log('  Match:', user === ADMIN_USERNAME);
+  console.log('  Pass match:', pw === adminPassword);
+  console.log('  adminPassword value:', adminPassword);
+  
   if(!user){
     err.textContent='Please enter your username.'; err.classList.remove('hidden'); return;
   }
   if(user!==ADMIN_USERNAME){
+    console.log('❌ USERNAME WRONG');
     err.textContent='Incorrect username.'; err.classList.remove('hidden'); return;
   }
   if(pw!==adminPassword){
+    console.log('❌ PASSWORD WRONG. Got: "' + pw + '" Expected: "' + adminPassword + '"');
     err.textContent='Incorrect password. Use "Forgot password?" to reset via email.';
     err.classList.remove('hidden'); return;
   }
-  closeLogin();
+  
+  // ✅ LOGIN SUCCESSFUL
+  console.log('✅ LOGIN SUCCESS!');
+  adminLoggedIn = true; // ⚠️ CRITICAL: Set flag to true
   sessionStorage.setItem('nafl_auth','1');
-  renderAdminTable(); updateMetrics(); populateTGrade();
+  sessionStorage.setItem('nafl_admin','true');
+  document.getElementById('loginModal').classList.add('hidden'); // Just hide modal, don't logout
+  console.log('✅ Modal hidden');
+  
+  try {
+    console.log('Calling renderAdminTable...');
+    renderAdminTable();
+    console.log('✅ renderAdminTable done');
+  } catch(e) { console.error('❌ renderAdminTable error:', e); }
+  
+  try {
+    console.log('Calling updateMetrics...');
+    updateMetrics();
+    console.log('✅ updateMetrics done');
+  } catch(e) { console.error('❌ updateMetrics error:', e); }
+  
+  try {
+    console.log('Calling populateTGrade...');
+    populateTGrade();
+    console.log('✅ populateTGrade done');
+  } catch(e) { console.error('❌ populateTGrade error:', e); }
+  
+  console.log('Calling showScreen(adminScreen)...');
   showScreen('adminScreen');
-  toast('Welcome, Admin!','success');
+  console.log('✅ showScreen done');
+  
+  toast('✅ Welcome, Admin! You are now logged in.','success');
 }
 
 // ═══════════════════════════════════════════
@@ -1270,7 +1314,6 @@ function pwStrength(v,barId,hintId){
 // ═══════════════════════════════════════════
 // FILE IMPORT
 // ═══════════════════════════════════════════
-document.getElementById('fileInput').addEventListener('change',handleFile);
 function mapCol(k){
   const n=k.toLowerCase().replace(/[^a-z0-9]/g,'');
   const M={acadamisid:'acadamis_id',academicid:'acadamis_id',studentid:'acadamis_id',
@@ -1315,74 +1358,6 @@ function handleFile(e){
   };
   if(ext==='csv')reader.readAsText(f);else reader.readAsArrayBuffer(f);
 }
-
-function handleFile(e){
-  // ⚠️ SECURITY: This function can only be called when admin is logged in
-  // (UI button is hidden otherwise), but verify again here.
-  if(!adminLoggedIn){
-    toast('❌ Admin login required to upload student data','error');
-    return;
-  }
-  
-  const f=e.target.files[0]; if(!f)return;
-  const ext=f.name.toLowerCase().split('.').pop();
-  
-  // Validate file type
-  if(!['csv','xls','xlsx'].includes(ext)){
-    document.getElementById('uploadStatus').textContent='❌ Error: Only CSV, XLS, or XLSX files allowed. You selected: '+ext;
-    toast('Only CSV, XLS, or XLSX files are supported','error');
-    return;
-  }
-  
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    try{
-      let wb;
-      try{
-        wb=XLSX.read(ev.target.result,{type:ext==='csv'?'string':'array'});
-      }catch(parseErr){
-        document.getElementById('uploadStatus').textContent='❌ Error: Could not parse file. Make sure it\'s a valid '+ext.toUpperCase()+' file.';
-        toast('File parsing failed. Check that it\'s a valid '+ext.toUpperCase()+' file','error');
-        return;
-      }
-      
-      if(!wb.SheetNames.length){
-        document.getElementById('uploadStatus').textContent='❌ Error: No sheets found in file.';
-        toast('File has no sheets','error');
-        return;
-      }
-      
-      let bestSheet=wb.SheetNames[0];
-      let bestRows=[];
-      // Try every sheet, using raw-array parsing + manual header detection
-      for(const s of wb.SheetNames){
-        try{
-          const rows=parseSheetWithHeaderDetection(wb.Sheets[s]);
-          if(rows.length>bestRows.length){ bestRows=rows; bestSheet=s; }
-        }catch(sheetErr){
-          console.warn('Sheet parse error on '+s+': '+sheetErr.message);
-        }
-      }
-      
-      if(!bestRows.length){
-        document.getElementById('uploadStatus').textContent='❌ Error: No data rows found. Check that file has student data.';
-        toast('No valid data found in file','error');
-        return;
-      }
-      
-      showDebug(Object.keys(bestRows[0]||{}),bestSheet);
-      importRows(bestRows,f.name);
-    }catch(err){
-      document.getElementById('uploadStatus').textContent='❌ Error: '+err.message;
-      toast('Upload error: '+err.message,'error');
-      console.error('Upload error:',err);
-    }
-  };
-  reader.onerror=()=>{
-    document.getElementById('uploadStatus').textContent='❌ Error: Could not read file.';
-    toast('File read error','error');
-  };
-  if(ext==='csv')reader.readAsText(f);else reader.readAsArrayBuffer(f);
 
 // Reads a sheet as raw rows, finds the row that actually looks like a header
 // (contains recognizable column names), then builds {header: value} objects
@@ -2654,7 +2629,7 @@ function classPDF(cm,keys){
 // ADMIN TABLE & METRICS
 // ═══════════════════════════════════════════
 function renderAdminTable(){
-  const body=document.getElementById('adminTableBody');
+  const body=document.getElementById('adminTable');
   if(!records.length){body.innerHTML='<tr><td colspan="12" class="px-3 py-8 text-center text-[#5d747a]">Upload student data and generate schedule.</td></tr>';return;}
 
   const searchEl=document.getElementById('studentSearch');
@@ -2791,6 +2766,34 @@ function toast(msg,type){
   d.textContent=msg;
   document.getElementById('toastArea').appendChild(d);
   setTimeout(()=>d.remove(),5000);
+}
+
+// ═══════════════════════════════════════════
+// FINAL INITIALIZATION — Run after DOM ready
+// ═══════════════════════════════════════════
+function initializeEventListeners(){
+  const fileInput=document.getElementById('fileInput');
+  if(fileInput){
+    fileInput.addEventListener('change',handleFile);
+    console.log('✅ File input listener attached');
+  } else {
+    console.error('❌ File input element not found!');
+  }
+  
+  // Restore admin login state if session exists
+  if(sessionStorage.getItem('nafl_admin')==='true'){
+    adminLoggedIn=true;
+    console.log('✅ Admin session restored');
+  } else {
+    adminLoggedIn=false;
+  }
+}
+
+// Attach listeners after DOM is fully loaded
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',initializeEventListeners);
+} else {
+  initializeEventListeners();
 }
 </script>
 </body>
