@@ -1172,20 +1172,22 @@ async function showTeacherPortal(){
   showScreen('teacherScreen');
   toast('Loading schedule…','info');
   
-  // Try to load from localStorage first (fastest, most reliable)
+  // FIRST: Load from localStorage (synchronous, reliable)
+  console.log('📂 Loading from cache...');
   const cache = loadLocalCache();
   if (cache && cache.records && cache.records.length > 0) {
     records = cache.records;
     SETTINGS = cache.SETTINGS || SETTINGS;
-    console.log('✅ Loaded from localStorage:', records.length, 'records');
+    console.log('✅ Loaded from cache:', records.length, 'records');
   } else {
-    // If no local cache, try API
-    console.log('ℹ️ No local cache, loading from API...');
-    await loadFromBackend();
+    console.log('ℹ️ No local cache found');
   }
   
+  // THEN: Populate dropdowns with whatever data we have
+  console.log('📊 Populating grades from records:', records.length);
   populateTGrade();
   updateDayCountStatus();
+  
   toast('Schedule ready!','success');
 }
 async function refreshTeacherData(){
