@@ -1170,10 +1170,23 @@ function showScreen(id){
 function showHome(){ showScreen('homeScreen'); }
 async function showTeacherPortal(){
   showScreen('teacherScreen');
-  toast('Refreshing latest schedule…','info');
-  await loadFromBackend();
+  toast('Loading schedule…','info');
+  
+  // Try to load from localStorage first (fastest, most reliable)
+  const cache = loadLocalCache();
+  if (cache && cache.records && cache.records.length > 0) {
+    records = cache.records;
+    SETTINGS = cache.SETTINGS || SETTINGS;
+    console.log('✅ Loaded from localStorage:', records.length, 'records');
+  } else {
+    // If no local cache, try API
+    console.log('ℹ️ No local cache, loading from API...');
+    await loadFromBackend();
+  }
+  
   populateTGrade();
   updateDayCountStatus();
+  toast('Schedule ready!','success');
 }
 async function refreshTeacherData(){
   toast('Refreshing…','info');
