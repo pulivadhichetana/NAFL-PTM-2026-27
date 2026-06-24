@@ -1,0 +1,2652 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>NAFL PTM Portal — National Academy for Learning</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--teal:#1f8a8a;--teal-dk:#166b6b;--ink:#12353b;--muted:#5d747a;--line:#dce8e7;--blue:#1a4fa0;--nafl-blue:#1a4fa0}
+*{box-sizing:border-box}
+body{margin:0;font-family:'DM Sans',sans-serif;color:var(--ink)}
+.fd{font-family:'Fraunces',serif}
+.screen{display:none}.screen.active{display:block}
+.gs{box-shadow:0 18px 50px rgba(25,75,81,.10)}
+.fr:focus{outline:3px solid rgba(31,138,138,.3);outline-offset:2px}
+.ts::-webkit-scrollbar{height:6px;width:6px}.ts::-webkit-scrollbar-thumb{background:#bfd6d3;border-radius:99px}
+.sg{background-image:linear-gradient(rgba(31,138,138,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(31,138,138,.04) 1px,transparent 1px);background-size:28px 28px}
+.nafl-blue{color:#1a4fa0}
+.break-row td{background:#fff8e6!important;font-style:italic;color:#7a5c00;font-weight:600}
+.sibling-row td{font-weight:700}
+.modal-bg{background:rgba(10,20,40,0.55);backdrop-filter:blur(6px)}
+/* Animated logo pulse */
+@keyframes flamePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+.logo-img{animation:flamePulse 3s ease-in-out infinite}
+/* OTP input */
+.otp-input{letter-spacing:0.3em;text-align:center;font-size:1.5rem;font-weight:700}
+</style>
+</head>
+<body class="w-full min-h-screen">
+
+<!-- ═══════════════════ HOME ═══════════════════ -->
+<section id="homeScreen" class="screen active min-h-screen w-full px-5 py-10 sg">
+  <header class="max-w-5xl mx-auto mb-12 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <img src="data:image/png;base64,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" class="logo-img h-14 w-auto" alt="NAFL Logo">
+      <div>
+        <p class="text-[10px] uppercase tracking-widest font-semibold text-[#5d747a]" id="homeSchoolCity">National Academy for Learning · North Bengaluru</p>
+        <h1 class="fd text-xl nafl-blue leading-tight" id="homeSchoolName">National Academy for Learning</h1>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap">
+      <span id="homeTermBadge" class="text-xs bg-[#1a4fa0] text-white rounded-full px-3 py-1 font-semibold cursor-pointer hover:bg-[#163d80] transition" onclick="showHomeTermEditor()" title="Click to change Term/Year">Term 1 · 2025–26 ✏️</span>
+    </div>
+
+    <!-- Inline Term/Year editor — visible on home, no login needed for display but settings saved for exports -->
+    <div id="homeTermEditor" class="hidden fixed inset-0 modal-bg z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-[22px] p-7 w-full max-w-xs shadow-2xl">
+        <h3 class="fd text-lg nafl-blue mb-4">Set Term & Year</h3>
+        <p class="text-xs text-[#5d747a] mb-4">This updates the badge on all screens and on all downloaded documents.</p>
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs font-semibold text-[#5d747a] block mb-1">Term</label>
+            <select id="hteTerm" class="w-full border border-[#dce8e7] rounded-xl px-3 py-2.5 text-sm outline-none bg-white">
+              <option value="1">Term 1</option>
+              <option value="2">Term 2</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-[#5d747a] block mb-1">Academic Year</label>
+            <input id="hteYear" type="text" placeholder="2025-26" class="w-full border border-[#dce8e7] rounded-xl px-3 py-2.5 text-sm outline-none">
+          </div>
+          <div class="flex gap-2 pt-1">
+            <button onclick="saveHomeTerm()" class="flex-1 bg-[#1a4fa0] text-white rounded-xl py-2.5 text-sm font-bold hover:bg-[#163d80]">Save</button>
+            <button onclick="document.getElementById('homeTermEditor').classList.add('hidden')" class="flex-1 border border-[#dce8e7] rounded-xl py-2.5 text-sm text-[#5d747a]">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+  <main class="max-w-4xl mx-auto">
+    <div class="text-center mb-10">
+      <div class="flex items-center justify-center gap-3 mb-3">
+        <img src="data:image/png;base64,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" class="h-10 w-auto" alt="NAFL">
+        <span class="fd text-3xl nafl-blue" id="homeTitle">Parent Teacher Meeting Portal</span>
+      </div>
+      <p class="text-[#5d747a] text-sm" id="homeTermLabel">Term 1 · 2025–26 · National Academy for Learning</p>
+    </div>
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- Admin Card -->
+      <article class="rounded-[24px] p-7 border border-[#dce8e7] gs bg-white relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-24 h-24 rounded-bl-[50px] bg-[#e8f4ff]"></div>
+        <div class="relative">
+          <div class="w-12 h-12 rounded-xl bg-[#e8f4ff] text-[#1a4fa0] grid place-items-center mb-5 text-2xl">🔐</div>
+          <h3 class="fd text-xl mb-2 nafl-blue">Admin Portal</h3>
+          <p class="text-[#5d747a] text-sm leading-6 mb-4">Upload student data · generate whole-school PTM schedule · manage sibling timings · download reports.</p>
+          <div class="text-xs text-[#1a4fa0] bg-[#e8f4ff] rounded-xl px-3 py-2 mb-4 border border-[#c0d8f0]">
+            🔒 Sibling timings are <strong>locked by Admin</strong> — teachers cannot change them.
+          </div>
+          <button onclick="showAdminLogin()" class="inline-flex items-center gap-2 rounded-xl px-5 py-3 bg-[#1a4fa0] text-white text-sm font-semibold hover:bg-[#163d80] transition fr">
+            🛡️ Admin Login
+          </button>
+        </div>
+      </article>
+      <!-- Teacher Card -->
+      <article class="rounded-[24px] p-7 border border-[#dce8e7] gs bg-white relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-24 h-24 rounded-bl-[50px] bg-[#e8f7f5]"></div>
+        <div class="relative">
+          <div class="w-12 h-12 rounded-xl bg-[#e8f7f5] text-[#1f8a8a] grid place-items-center mb-5 text-2xl">👩‍🏫</div>
+          <h3 class="fd text-xl mb-2 text-[#12353b]">Teacher Portal</h3>
+          <p class="text-[#5d747a] text-sm leading-6 mb-4">Select your class · set break times & dates · generate and download your class PTM timetable.</p>
+          <div class="text-xs text-amber-700 bg-amber-50 rounded-xl px-3 py-2 mb-4 border border-amber-200">
+            ⚠️ Sibling slots shown in <strong>bold</strong> — Admin-set times, not editable.
+          </div>
+          <button onclick="showTeacherPortal()" class="inline-flex items-center gap-2 rounded-xl px-5 py-3 bg-[#1f8a8a] text-white text-sm font-semibold hover:bg-[#166b6b] transition fr">
+            📋 Open Teacher Portal
+          </button>
+        </div>
+      </article>
+    </div>
+  </main>
+</section>
+
+<!-- ═══════════════════ ADMIN LOGIN MODAL ═══════════════════ -->
+<div id="loginModal" class="hidden fixed inset-0 modal-bg z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-[24px] p-8 w-full max-w-sm shadow-2xl">
+    <div class="text-center mb-6">
+      <img src="data:image/png;base64,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" class="h-16 w-auto mx-auto mb-3" alt="NAFL">
+      <h2 class="fd text-xl nafl-blue mb-1">Admin Login</h2>
+      <p class="text-[10px] text-[#5d747a] uppercase tracking-widest" id="loginSchoolLabel">National Academy for Learning</p>
+    </div>
+    <div class="space-y-4">
+      <div>
+        <label class="text-xs font-semibold text-[#5d747a] block mb-1">Username</label>
+        <input id="loginUser" type="text" placeholder="Enter username" class="w-full border border-[#dce8e7] rounded-xl px-3 py-3 text-sm fr outline-none bg-[#f8fbfb]" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div>
+        <label class="text-xs font-semibold text-[#5d747a] block mb-1">Password</label>
+        <div class="relative">
+          <input id="loginPass" type="password" placeholder="Enter password" class="w-full border border-[#dce8e7] rounded-xl px-3 py-3 text-sm fr outline-none bg-[#f8fbfb] pr-10" onkeydown="if(event.key==='Enter')doLogin()">
+          <button onclick="togglePwdVis('loginPass')" class="absolute right-3 top-1/2 -translate-y-1/2 text-[#5d747a] text-xs">👁</button>
+        </div>
+      </div>
+      <div id="loginErr" class="hidden text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2"></div>
+      <button onclick="doLogin()" class="w-full bg-[#1a4fa0] text-white rounded-xl py-3 text-sm font-bold hover:bg-[#163d80] transition">Sign In</button>
+      <div class="text-center">
+        <button onclick="showForgotPwd()" class="text-xs text-[#1a4fa0] hover:underline">Forgot password? Reset via email</button>
+      </div>
+      <button onclick="closeLogin()" class="w-full text-[#5d747a] text-xs py-1">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ FORGOT / RESET PASSWORD MODAL ═══════════════════ -->
+<div id="resetModal" class="hidden fixed inset-0 modal-bg z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-[24px] p-8 w-full max-w-sm shadow-2xl">
+    <div class="text-center mb-5">
+      <img src="data:image/png;base64,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" class="h-12 w-auto mx-auto mb-2" alt="NAFL">
+      <h2 class="fd text-lg nafl-blue">Reset Password</h2>
+      <p class="text-xs text-[#5d747a] mt-1">Enter your registered admin email to receive a verification code.</p>
+    </div>
+
+    <!-- Step 1: Email -->
+    <div id="resetStep1">
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs font-semibold text-[#5d747a] block mb-1">Admin Email</label>
+          <input id="resetEmail" type="email" placeholder="bchethana@naflnorth.com" class="w-full border border-[#dce8e7] rounded-xl px-3 py-3 text-sm fr outline-none bg-[#f8fbfb]">
+        </div>
+        <div id="resetEmailErr" class="hidden text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2"></div>
+        <button onclick="sendResetOTP()" class="w-full bg-[#1a4fa0] text-white rounded-xl py-3 text-sm font-bold hover:bg-[#163d80] transition">Send Verification Code</button>
+        <button onclick="closeReset()" class="w-full text-[#5d747a] text-xs py-1">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Step 2: OTP + New Password -->
+    <div id="resetStep2" class="hidden">
+      <div class="space-y-3">
+        <div class="bg-green-50 border border-green-200 rounded-xl px-3 py-2 text-xs text-green-700 mb-2">
+          ✅ Code sent to <strong id="resetEmailDisplay"></strong>. Check your inbox.
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-[#5d747a] block mb-1">Verification Code (6 digits)</label>
+          <input id="otpInput" type="text" maxlength="6" placeholder="——————" class="otp-input w-full border-2 border-[#1a4fa0] rounded-xl px-3 py-3 fr outline-none">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-[#5d747a] block mb-1">New Password</label>
+          <div class="relative">
+            <input id="resetNewPwd" type="password" placeholder="Min 8 characters" class="w-full border border-[#dce8e7] rounded-xl px-3 py-2.5 text-sm fr outline-none pr-10" oninput="checkResetStrength()">
+            <button onclick="togglePwdVis('resetNewPwd')" class="absolute right-3 top-1/2 -translate-y-1/2 text-[#5d747a] text-xs">👁</button>
+          </div>
+          <div class="mt-1 h-1 rounded-full bg-gray-200 overflow-hidden"><div id="resetPwdBar" class="h-full transition-all" style="width:0%"></div></div>
+          <p id="resetPwdHint" class="text-[10px] text-[#5d747a] mt-0.5"></p>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-[#5d747a] block mb-1">Confirm New Password</label>
+          <input id="resetConfirmPwd" type="password" placeholder="Repeat password" class="w-full border border-[#dce8e7] rounded-xl px-3 py-2.5 text-sm fr outline-none">
+        </div>
+        <div id="resetOTPErr" class="hidden text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2"></div>
+        <button onclick="doResetPassword()" class="w-full bg-[#1a4fa0] text-white rounded-xl py-3 text-sm font-bold hover:bg-[#163d80] transition">Set New Password</button>
+        <button onclick="closeReset()" class="w-full text-[#5d747a] text-xs py-1">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ ADMIN DASHBOARD ═══════════════════ -->
+<section id="adminScreen" class="screen min-h-screen bg-[#f4f8ff]">
+  <header class="border-b border-[#dce8e7] bg-white sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-5 py-3 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <img src="data:image/png;base64,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" class="h-10 w-auto" alt="NAFL">
+        <div>
+          <p class="text-[10px] uppercase tracking-widest text-[#5d747a] font-semibold">Admin Dashboard</p>
+          <h2 class="fd text-base nafl-blue leading-tight" id="adminHeaderTitle">NAFL PTM Schedule</h2>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <span id="storageIndicator" class="text-[10px] bg-green-100 text-green-700 rounded-full px-2 py-1 font-semibold" title="Data saved in browser"></span>
+        <span id="adminTermBadge" class="text-[10px] bg-[#1a4fa0] text-white rounded-full px-3 py-1 font-semibold">Term 1 · 2025–26</span>
+        <button onclick="showSchoolSettings()" class="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-[#c0d8f0] text-xs text-[#1a4fa0] hover:bg-[#e8f4ff] fr">⚙️ Settings</button>
+        <button onclick="showChangePwd()" class="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-[#dce8e7] text-xs text-[#5d747a] hover:bg-[#f7fbfa] fr">🔑 Change Password</button>
+        <button onclick="showHome()" class="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-[#dce8e7] text-xs text-[#5d747a] hover:bg-[#f7fbfa] fr">🏠 Home</button>
+        <button onclick="doLogout()" class="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-red-200 text-xs text-red-600 hover:bg-red-50 fr">🚪 Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- School Settings Modal -->
+  <div id="schoolSettingsModal" class="hidden fixed inset-0 modal-bg z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-[22px] p-7 w-full max-w-md shadow-2xl">
+      <div class="flex items-center gap-3 mb-5">
+        <img src="data:image/png;base64,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" class="h-10 w-auto" alt="NAFL">
+        <h3 class="fd text-lg nafl-blue">School & Term Settings</h3>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="text-xs font-semibold text-[#5d747a] block mb-1">School Name</label>
+          <input id="setSchoolName" type="text" value="National Academy for Learning" class="w-full border border-[#dce8e7] rounded-xl px-3 py-2.5 text-sm fr outline-none">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-[#5d747a] block mb-1">School City / Branch</label>
+          <input id="setSchoolCity" type="text" value="North Bengaluru" class="w-full border border-[#dce8e7] rounded-xl px-3 py-2.5 text-sm fr outline-none">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-semibold text-[#5d747a] block mb-1">Term</label>
+            <select id="setTerm" class="w-full border border-[#dce8e7] rounded-xl px-3 py-2.5 text-sm fr outline-none bg-white">
+              <option value="1">Term 1</option>
+              <option value="2">Term 2</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-[#5d747a] block mb-1">Academic Year</label>
+            <input id="setYear" type="text" value="2025-26" placeholder="2025-26" class="w-full border border-[#dce8e7] rounded-xl px-3 py-2.5 text-sm fr outline-none">
+          </div>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-[#5d747a] block mb-1">Admin Email (for password reset)</label>
+          <input id="setAdminEmail" type="email" value="bchethana@naflnorth.com" class="w-full border border-[#dce8e7] rounded-xl px-3 py-2.5 text-sm fr outline-none bg-[#f8fbfb]">
+          <p class="text-[10px] text-[#5d747a] mt-1">This email is used for password reset verification only.</p>
+        </div>
+        <div class="flex gap-3 pt-1">
+          <button onclick="saveSchoolSettings()" class="flex-1 bg-[#1a4fa0] text-white rounded-xl py-2.5 text-sm font-bold hover:bg-[#163d80]">Save Settings</button>
+          <button onclick="document.getElementById('schoolSettingsModal').classList.add('hidden')" class="flex-1 border border-[#dce8e7] rounded-xl py-2.5 text-sm text-[#5d747a]">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change Password Modal (from inside admin — no email needed) -->
+  <div id="changePwdModal" class="hidden fixed inset-0 modal-bg z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-[22px] p-7 w-full max-w-sm shadow-2xl">
+      <div class="flex items-center gap-3 mb-5">
+        <img src="data:image/png;base64,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" class="h-8 w-auto" alt="NAFL">
+        <h3 class="fd text-lg nafl-blue">Change Password</h3>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs font-semibold text-[#5d747a] block mb-1">Current Password</label>
+          <div class="relative">
+            <input id="cpCurrent" type="password" class="w-full border border-[#dce8e7] rounded-xl px-3 py-2.5 text-sm fr outline-none pr-10">
+            <button onclick="togglePwdVis('cpCurrent')" class="absolute right-3 top-1/2 -translate-y-1/2 text-[#5d747a] text-xs">👁</button>
+          </div>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-[#5d747a] block mb-1">New Password</label>
+          <div class="relative">
+            <input id="cpNew" type="password" oninput="checkCPStrength()" class="w-full border border-[#dce8e7] rounded-xl px-3 py-2.5 text-sm fr outline-none pr-10">
+            <button onclick="togglePwdVis('cpNew')" class="absolute right-3 top-1/2 -translate-y-1/2 text-[#5d747a] text-xs">👁</button>
+          </div>
+          <div class="mt-1 h-1 rounded-full bg-gray-200 overflow-hidden"><div id="cpBar" class="h-full transition-all" style="width:0%"></div></div>
+          <p id="cpHint" class="text-[10px] text-[#5d747a] mt-0.5"></p>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-[#5d747a] block mb-1">Confirm New Password</label>
+          <input id="cpConfirm" type="password" class="w-full border border-[#dce8e7] rounded-xl px-3 py-2.5 text-sm fr outline-none">
+        </div>
+        <div id="cpErr" class="hidden text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2"></div>
+        <div class="flex gap-2 pt-1">
+          <button onclick="doChangePwd()" class="flex-1 bg-[#1a4fa0] text-white rounded-xl py-2.5 text-sm font-bold hover:bg-[#163d80]">Update</button>
+          <button onclick="document.getElementById('changePwdModal').classList.add('hidden')" class="flex-1 border border-[#dce8e7] rounded-xl py-2.5 text-sm text-[#5d747a]">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Special Appointment Modal — set/edit a custom locked time for one student -->
+  <div id="specialApptModal" class="hidden fixed inset-0 modal-bg z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-[22px] p-7 w-full max-w-sm shadow-2xl">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-2xl">⭐</span>
+        <div>
+          <h3 class="fd text-lg nafl-blue">Special Appointment</h3>
+          <p id="specialApptStudentName" class="text-xs text-[#5d747a]"></p>
+        </div>
+      </div>
+      <p class="text-xs text-[#5d747a] bg-[#f0f5ff] border border-[#1a4fa0]/20 rounded-xl px-3 py-2 mb-4">
+        Sets a fixed custom time for this student. It will be excluded from the normal slot rotation and never reassigned by Generate Schedule, just like sibling timings.
+      </p>
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs font-semibold text-[#5d747a] block mb-1">Custom Time Slot</label>
+          <input id="specialApptTime" type="text" placeholder="e.g. 9:00 a.m. – 9:15 a.m." class="w-full border border-[#dce8e7] rounded-xl px-3 py-2.5 text-sm fr outline-none">
+          <p class="text-[10px] text-[#5d747a] mt-1">Type the exact time range to display on the schedule (any format/duration is allowed).</p>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-[#5d747a] block mb-1">Reason (optional, for Admin reference only)</label>
+          <input id="specialApptReason" type="text" placeholder="e.g. Parent travelling, early slot requested" class="w-full border border-[#dce8e7] rounded-xl px-3 py-2.5 text-sm fr outline-none">
+        </div>
+        <div id="specialApptErr" class="hidden text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2"></div>
+        <div class="flex gap-2 pt-1">
+          <button onclick="saveSpecialAppt()" class="flex-1 bg-[#1a4fa0] text-white rounded-xl py-2.5 text-sm font-bold hover:bg-[#163d80]">⭐ Set Appointment</button>
+          <button onclick="document.getElementById('specialApptModal').classList.add('hidden')" class="flex-1 border border-[#dce8e7] rounded-xl py-2.5 text-sm text-[#5d747a]">Cancel</button>
+        </div>
+        <button id="removeApptBtn" onclick="removeSpecialAppt()" class="hidden w-full text-red-600 text-xs py-2 hover:underline">🗑️ Remove special appointment</button>
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-7xl mx-auto px-5 py-6 space-y-5">
+    <!-- Metrics -->
+    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+      <div class="bg-white border border-[#dce8e7] rounded-2xl p-4"><p class="text-[10px] text-[#5d747a] mb-1">Students</p><p id="mStudents" class="text-2xl font-bold nafl-blue">0</p></div>
+      <div class="bg-white border border-[#dce8e7] rounded-2xl p-4"><p class="text-[10px] text-[#5d747a] mb-1">Classes</p><p id="mClasses" class="text-2xl font-bold">0</p></div>
+      <div class="bg-white border border-[#dce8e7] rounded-2xl p-4"><p class="text-[10px] text-[#5d747a] mb-1">Sibling Groups</p><p id="mGroups" class="text-2xl font-bold text-amber-600">0</p></div>
+      <div class="bg-white border border-[#dce8e7] rounded-2xl p-4"><p class="text-[10px] text-[#5d747a] mb-1">Scheduled</p><p id="mScheduled" class="text-2xl font-bold text-green-700">0</p></div>
+      <div class="bg-white border border-[#dce8e7] rounded-2xl p-4"><p class="text-[10px] text-[#5d747a] mb-1">Total Slots</p><p id="mSlots" class="text-2xl font-bold">0</p></div>
+      <div class="bg-white border border-[#dce8e7] rounded-2xl p-4"><p class="text-[10px] text-[#5d747a] mb-1">Import Errors</p><p id="mFailed" class="text-2xl font-bold text-red-500">0</p></div>
+    </div>
+
+    <!-- Upload + Validation -->
+    <div class="grid xl:grid-cols-2 gap-5">
+      <section class="bg-white border border-[#dce8e7] rounded-[20px] p-5">
+        <div class="flex items-start justify-between gap-3 mb-4">
+          <div>
+            <p class="text-[10px] uppercase tracking-widest font-semibold text-[#1a4fa0] mb-1">Step 1</p>
+            <h2 class="fd text-lg nafl-blue">Upload Student Data</h2>
+            <p class="text-xs text-[#5d747a] mt-1">CSV / XLSX / XLS — needs Student Name + Class</p>
+          </div>
+          <span class="text-2xl">📤</span>
+        </div>
+        <label for="fileInput" class="block cursor-pointer border-2 border-dashed border-[#b9d8d4] rounded-xl p-5 bg-[#fbfdfc] hover:bg-[#f4fbfa] transition text-center">
+          <div class="text-2xl mb-2">📊</div>
+          <p class="text-sm font-semibold text-[#12353b] mb-1">Drop file here or click to browse</p>
+          <p class="text-xs text-[#5d747a]">Cols: Acadamis ID · Adm No · Roll No · Section · Sibling Details · Parent Mobile</p>
+          <input id="fileInput" type="file" accept=".csv,.xlsx,.xls" class="hidden">
+        </label>
+        <div id="uploadStatus" class="mt-3 text-xs rounded-xl px-3 py-3 bg-[#f7fbfa] text-[#5d747a] border border-[#dce8e7]">No file uploaded yet.</div>
+        <div id="debugPanel" class="hidden mt-3 rounded-xl border border-[#b9d8d4] bg-[#f4fbfa] p-3">
+          <p class="text-[10px] font-semibold text-[#1f8a8a] mb-1">Column Mapping:</p>
+          <div id="debugHeaders" class="text-[10px] text-[#5d747a] font-mono max-h-20 overflow-auto ts"></div>
+        </div>
+      </section>
+      <section class="bg-white border border-[#dce8e7] rounded-[20px] p-5">
+        <div class="flex items-start justify-between gap-3 mb-4">
+          <div>
+            <p class="text-[10px] uppercase tracking-widest font-semibold text-[#1a4fa0] mb-1">Step 2</p>
+            <h2 class="fd text-lg nafl-blue">Import Validation</h2>
+          </div>
+          <span class="text-2xl">✅</span>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div class="rounded-xl bg-[#f8fbfb] border border-[#dce8e7] p-3"><p class="text-[10px] text-[#5d747a] mb-1">Rows in File</p><p id="statFound" class="text-lg font-bold">0</p></div>
+          <div class="rounded-xl bg-[#f8fbfb] border border-[#dce8e7] p-3"><p class="text-[10px] text-[#5d747a] mb-1">Imported</p><p id="statImported" class="text-lg font-bold text-green-700">0</p></div>
+          <div class="rounded-xl bg-[#f8fbfb] border border-[#dce8e7] p-3"><p class="text-[10px] text-[#5d747a] mb-1">Duplicates</p><p id="statDups" class="text-lg font-bold text-amber-600">0</p></div>
+          <div class="rounded-xl bg-[#fff5f5] border border-[#f0c4c4] p-3"><p class="text-[10px] text-[#5d747a] mb-1">Failed</p><p id="statFail" class="text-lg font-bold text-red-600">0</p></div>
+          <div class="rounded-xl bg-[#e8f4ff] border border-[#c0d8f0] p-3 col-span-2"><p class="text-[10px] text-[#5d747a] mb-1">Total Records Ready</p><p id="statFinal" class="text-xl font-bold nafl-blue">0</p></div>
+        </div>
+        <div id="failSection" class="hidden rounded-xl border border-[#f0d6d6] bg-[#fff8f8] p-3">
+          <p class="text-xs font-semibold text-red-700 mb-2">Failed Records:</p>
+          <div id="failList" class="space-y-1 max-h-28 overflow-auto ts text-xs"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Siblings + Generator -->
+    <div class="grid xl:grid-cols-2 gap-5">
+      <section class="bg-white border border-[#dce8e7] rounded-[20px] p-5">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <p class="text-[10px] uppercase tracking-widest font-semibold text-amber-600 mb-1">Step 3 — Admin Only · 🔒 Locked</p>
+            <h2 class="fd text-lg text-[#12353b]">Sibling Groups</h2>
+            <p class="text-xs text-[#5d747a]">Auto-detected. Timings set by Admin, cannot be changed by teachers.</p>
+          </div>
+          <span class="text-2xl">👨‍👩‍👧</span>
+        </div>
+        <div id="siblingPreview" class="space-y-2 max-h-96 overflow-auto ts">
+          <div class="rounded-xl border border-dashed border-[#dce8e7] p-3 text-xs text-[#5d747a]">Sibling groups will appear after import.</div>
+        </div>
+      </section>
+      <section class="bg-gradient-to-br from-[#1a4fa0] to-[#0f3070] rounded-[20px] p-5 text-white relative overflow-hidden">
+        <div class="absolute -right-8 -top-8 w-36 h-36 rounded-full bg-white/5"></div>
+        <div class="relative">
+          <p class="text-[10px] uppercase tracking-widest font-semibold text-blue-200 mb-1">Step 4</p>
+          <h2 class="fd text-lg mb-2">Generate Whole-School Schedule</h2>
+          <p class="text-xs text-blue-200 mb-4">No class duplicates. Siblings get 20–30 min gap. Teachers can then personalise with their dates & breaks.</p>
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div><label class="text-[10px] uppercase tracking-wide text-blue-200 block mb-1">Start Time</label>
+              <input id="adminStart" type="time" value="08:10" class="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-sm text-white fr outline-none"></div>
+            <div><label class="text-[10px] uppercase tracking-wide text-blue-200 block mb-1">End Time</label>
+              <input id="adminEnd" type="time" value="14:00" class="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-sm text-white fr outline-none"></div>
+          </div>
+          <button onclick="generateSchedule()" class="inline-flex items-center gap-2 rounded-xl px-5 py-3 bg-white text-[#1a4fa0] text-sm font-bold hover:bg-[#e8f4ff] transition fr">✨ Generate Schedule</button>
+          <div id="scheduleStatus" class="mt-3 text-xs text-blue-200">Upload student data first.</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Admin Schedule Table -->
+    <section class="bg-white border border-[#dce8e7] rounded-[20px] p-5">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4">
+        <div>
+          <p class="text-[10px] uppercase tracking-widest font-semibold text-[#1a4fa0] mb-1">Step 5 — Whole-School Schedule</p>
+          <h2 class="fd text-lg nafl-blue">Generated PTM Schedule</h2>
+          <p class="text-xs text-[#5d747a]">Sibling rows highlighted in bold. ⭐ = special appointment (custom fixed time). Download class-wise or whole-school.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="adminExport('xlsx')" class="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-[#dce8e7] text-xs hover:bg-[#f7fbfa] fr">📊 Excel (All)</button>
+          <button onclick="adminExport('pdf')" class="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-[#dce8e7] text-xs hover:bg-[#f7fbfa] fr">📄 PDF (All)</button>
+          <button onclick="adminExportClasswise('xlsx')" class="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-[#1a4fa0] text-xs text-[#1a4fa0] hover:bg-[#e8f4ff] fr">📋 Excel (Class-wise)</button>
+          <button onclick="adminExportClasswise('pdf')" class="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-[#1a4fa0] text-xs text-[#1a4fa0] hover:bg-[#e8f4ff] fr">📑 PDF (Class-wise)</button>
+          <button onclick="adminExport('xlsx-teams')" class="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-purple-300 text-xs text-purple-700 hover:bg-purple-50 fr" title="Same .xlsx file — opens cleanly in Excel Desktop, Excel Online, and Microsoft Teams">🟪 Excel for Teams</button>
+          <button onclick="toggleClassLinksPanel()" class="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-green-300 text-xs text-green-700 hover:bg-green-50 fr">🔗 Get Class Links</button>
+          <button onclick="showDeleteConfirm()" class="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-red-200 text-xs text-red-600 hover:bg-red-50 fr">🗑️ Delete All</button>
+        </div>
+      </div>
+
+      <!-- Class Links panel — generates a Grade1A_Timeslot style link for every class -->
+      <div id="classLinksPanel" class="hidden mb-4 rounded-xl border border-green-200 bg-green-50/40 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-xs font-semibold text-green-800">🔗 Shareable Class Links — paste these into your circular</p>
+          <button onclick="copyAllClassLinks()" class="text-xs bg-green-600 text-white rounded-lg px-3 py-1.5 font-semibold hover:bg-green-700">📋 Copy All</button>
+        </div>
+        <p class="text-[10px] text-[#5d747a] mb-3">Each link opens a page named like <code class="bg-white px-1 rounded">Grade1A_Timeslot</code> showing that class's schedule, with a download button. Anyone with the link can view it — no login required.</p>
+        <div id="classLinksList" class="space-y-1.5 max-h-72 overflow-auto ts text-xs"></div>
+      </div>
+
+      <div id="deleteBar" class="hidden mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <p class="text-xs text-red-700">This will permanently remove all imported records and generated schedules.</p>
+        <div class="flex gap-2">
+          <button onclick="deleteAllRecords()" class="px-3 py-2 rounded-lg bg-red-600 text-white text-xs font-semibold">Confirm Delete</button>
+          <button onclick="document.getElementById('deleteBar').classList.add('hidden')" class="px-3 py-2 rounded-lg border border-red-200 text-xs">Cancel</button>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 mb-3">
+        <input id="studentSearch" type="text" placeholder="🔍 Search student name to set a special appointment…" oninput="renderAdminTable()" class="flex-1 border border-[#dce8e7] rounded-xl px-3 py-2 text-xs fr outline-none">
+        <span class="text-[10px] text-[#5d747a] whitespace-nowrap">⭐ = locked custom time</span>
+      </div>
+      <div class="ts overflow-x-auto border border-[#dce8e7] rounded-xl">
+        <table class="w-full min-w-[980px] text-xs">
+          <thead class="bg-[#e8f4ff] text-left text-[#1a4fa0]">
+            <tr>
+              <th class="px-3 py-3 font-bold">#</th>
+              <th class="px-3 py-3 font-bold">Acadamis ID</th>
+              <th class="px-3 py-3 font-bold">Adm No.</th>
+              <th class="px-3 py-3 font-bold">Roll No.</th>
+              <th class="px-3 py-3 font-bold">Student Name</th>
+              <th class="px-3 py-3 font-bold">Grade & Sec</th>
+              <th class="px-3 py-3 font-bold">Admin Slot</th>
+              <th class="px-3 py-3 font-bold">Teacher Timing</th>
+              <th class="px-3 py-3 font-bold">Date</th>
+              <th class="px-3 py-3 font-bold">Sibling</th>
+              <th class="px-3 py-3 font-bold">Status</th>
+              <th class="px-3 py-3 font-bold">Special Appt.</th>
+            </tr>
+          </thead>
+          <tbody id="adminTableBody">
+            <tr><td colspan="12" class="px-3 py-8 text-center text-[#5d747a]">Upload student data and generate schedule to see results.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</section>
+
+<!-- ═══════════════════ TEACHER PORTAL ═══════════════════ -->
+<section id="teacherScreen" class="screen min-h-screen bg-[#f7fbfa]">
+  <header class="border-b border-[#dce8e7] bg-white sticky top-0 z-40 shadow-sm">
+    <div class="max-w-5xl mx-auto px-5 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <img src="data:image/png;base64,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" class="h-9 w-auto" alt="NAFL">
+        <div>
+          <p class="text-[10px] uppercase tracking-widest text-[#5d747a] font-semibold" id="tPortalSub">Teacher Portal</p>
+          <h2 class="fd text-base nafl-blue leading-tight" id="tPortalTitle">NAFL PTM Schedule</h2>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="tTermBadge" class="text-[10px] bg-[#1f8a8a] text-white rounded-full px-3 py-1 font-semibold">Term 1 · 2025–26</span>
+        <button onclick="refreshTeacherData()" class="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-[#1f8a8a]/40 text-xs text-[#1f8a8a] hover:bg-[#e8f7f5] fr" title="Pull latest schedule from Admin">🔄 Refresh</button>
+        <button onclick="showHome()" class="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-[#dce8e7] text-xs text-[#5d747a] hover:bg-[#f7fbfa] fr">🏠 Home</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-5 py-6 space-y-5">
+    <section class="bg-white border border-[#dce8e7] rounded-[20px] p-5">
+      <p class="text-[10px] uppercase tracking-widest font-semibold text-[#1f8a8a] mb-4">Step 1 — Your Class & Details</p>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        <div><label class="text-xs font-semibold text-[#5d747a] block mb-1">Grade</label>
+          <select id="tGrade" onchange="refreshTSection()" class="w-full border border-[#dce8e7] rounded-xl px-3 py-2.5 text-sm fr outline-none bg-white"><option value="">Select grade</option></select></div>
+        <div><label class="text-xs font-semibold text-[#5d747a] block mb-1">Section</label>
+          <select id="tSection" class="w-full border border-[#dce8e7] rounded-xl px-3 py-2.5 text-sm fr outline-none bg-white"><option value="">Select section</option></select></div>
+        <div><label class="text-xs font-semibold text-[#5d747a] block mb-1">Class Teacher (CT)</label>
+          <input id="tCT" type="text" placeholder="Ms / Mr Name" class="w-full border border-[#dce8e7] rounded-xl px-3 py-2.5 text-sm fr outline-none"></div>
+        <div><label class="text-xs font-semibold text-[#5d747a] block mb-1">Associate CT (ACT)</label>
+          <input id="tACT" type="text" placeholder="Ms / Mr Name" class="w-full border border-[#dce8e7] rounded-xl px-3 py-2.5 text-sm fr outline-none"></div>
+      </div>
+
+      <p class="text-[10px] uppercase tracking-widest font-semibold text-[#1f8a8a] mb-3">Step 2 — PTM Day(s)</p>
+      <div class="grid sm:grid-cols-2 gap-4 mb-2">
+        <div class="border border-[#dce8e7] rounded-xl p-4">
+          <div class="flex items-center gap-2 mb-3"><input type="checkbox" id="useDay1" onchange="toggleDay(1)" checked class="w-4 h-4 accent-[#1a4fa0]"><label for="useDay1" class="text-sm font-semibold nafl-blue">Day 1</label></div>
+          <div class="grid grid-cols-4 gap-2" id="day1Fields">
+            <div><label class="text-[10px] text-[#5d747a] block mb-1">Date</label><input id="tDay1Date" type="date" class="w-full border border-[#dce8e7] rounded-lg px-2 py-2 text-xs fr outline-none"></div>
+            <div><label class="text-[10px] text-[#5d747a] block mb-1">Start</label><input id="tDay1Start" type="time" value="08:10" class="w-full border border-[#dce8e7] rounded-lg px-2 py-2 text-xs fr outline-none"></div>
+            <div><label class="text-[10px] text-[#5d747a] block mb-1">End</label><input id="tDay1End" type="time" value="14:00" class="w-full border border-[#dce8e7] rounded-lg px-2 py-2 text-xs fr outline-none"></div>
+            <div><label class="text-[10px] text-[#1a4fa0] font-semibold block mb-1">Students</label><input id="tDay1Count" type="number" min="0" placeholder="e.g. 20" oninput="updateDayCountStatus()" class="w-full border-2 border-[#1a4fa0]/40 rounded-lg px-2 py-2 text-xs fr outline-none font-semibold"></div>
+          </div>
+        </div>
+        <div class="border border-[#dce8e7] rounded-xl p-4">
+          <div class="flex items-center gap-2 mb-3"><input type="checkbox" id="useDay2" onchange="toggleDay(2)" class="w-4 h-4 accent-[#1a4fa0]"><label for="useDay2" class="text-sm font-semibold nafl-blue">Day 2</label></div>
+          <div class="grid grid-cols-4 gap-2 opacity-40 pointer-events-none" id="day2Fields">
+            <div><label class="text-[10px] text-[#5d747a] block mb-1">Date</label><input id="tDay2Date" type="date" class="w-full border border-[#dce8e7] rounded-lg px-2 py-2 text-xs fr outline-none"></div>
+            <div><label class="text-[10px] text-[#5d747a] block mb-1">Start</label><input id="tDay2Start" type="time" value="08:10" class="w-full border border-[#dce8e7] rounded-lg px-2 py-2 text-xs fr outline-none"></div>
+            <div><label class="text-[10px] text-[#5d747a] block mb-1">End</label><input id="tDay2End" type="time" value="14:00" class="w-full border border-[#dce8e7] rounded-lg px-2 py-2 text-xs fr outline-none"></div>
+            <div><label class="text-[10px] text-[#1a4fa0] font-semibold block mb-1">Students</label><input id="tDay2Count" type="number" min="0" placeholder="e.g. 13" oninput="updateDayCountStatus()" class="w-full border-2 border-[#1a4fa0]/40 rounded-lg px-2 py-2 text-xs fr outline-none font-semibold"></div>
+          </div>
+        </div>
+      </div>
+      <div id="dayCountStatus" class="text-xs rounded-lg px-3 py-2 mb-5 bg-[#f0f5ff] text-[#1a4fa0] border border-[#1a4fa0]/20">
+        Select a grade and section above to see the total student count.
+      </div>
+
+      <p class="text-[10px] uppercase tracking-widest font-semibold text-[#1f8a8a] mb-3">Step 3 — Break Times <span class="normal-case font-normal text-[#5d747a]">(optional — no PTM slots during an enabled break)</span></p>
+      <div class="grid sm:grid-cols-2 gap-4 mb-5">
+        <div class="border border-amber-200 rounded-xl p-4 bg-amber-50/30">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="useBrk1" checked onchange="toggleBreak(1)" class="w-4 h-4 accent-amber-600">
+              <label for="useBrk1" class="text-xs font-semibold text-amber-700">☕ Break 1 — Snack (max 20 min)</label>
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-2" id="brk1Fields">
+            <div><label class="text-[10px] text-[#5d747a] block mb-1">Start</label><input id="brk1Start" type="time" value="10:10" class="w-full border border-amber-200 rounded-lg px-2 py-2 text-xs fr outline-none bg-white"></div>
+            <div><label class="text-[10px] text-[#5d747a] block mb-1">End</label><input id="brk1End" type="time" value="10:30" class="w-full border border-amber-200 rounded-lg px-2 py-2 text-xs fr outline-none bg-white"></div>
+            <div><label class="text-[10px] text-[#5d747a] block mb-1">Label</label><input id="brk1Label" type="text" value="Snack Break" class="w-full border border-amber-200 rounded-lg px-2 py-2 text-xs fr outline-none bg-white"></div>
+          </div>
+        </div>
+        <div class="border border-orange-200 rounded-xl p-4 bg-orange-50/30">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="useBrk2" checked onchange="toggleBreak(2)" class="w-4 h-4 accent-orange-600">
+              <label for="useBrk2" class="text-xs font-semibold text-orange-700">🍱 Break 2 — Lunch (max 30 min)</label>
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-2" id="brk2Fields">
+            <div><label class="text-[10px] text-[#5d747a] block mb-1">Start</label><input id="brk2Start" type="time" value="12:30" class="w-full border border-orange-200 rounded-lg px-2 py-2 text-xs fr outline-none bg-white"></div>
+            <div><label class="text-[10px] text-[#5d747a] block mb-1">End</label><input id="brk2End" type="time" value="13:00" class="w-full border border-orange-200 rounded-lg px-2 py-2 text-xs fr outline-none bg-white"></div>
+            <div><label class="text-[10px] text-[#5d747a] block mb-1">Label</label><input id="brk2Label" type="text" value="Lunch Break" class="w-full border border-orange-200 rounded-lg px-2 py-2 text-xs fr outline-none bg-white"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-4 flex-wrap">
+        <button onclick="generateTeacherSchedule()" class="inline-flex items-center gap-2 rounded-xl px-6 py-3 bg-[#1f8a8a] text-white text-sm font-bold hover:bg-[#166b6b] transition fr">📅 Generate My PTM Schedule</button>
+        <p class="text-[10px] text-amber-700 bg-amber-50 rounded-lg px-3 py-2 border border-amber-200">⚠️ Sibling timings are <strong>locked by Admin</strong> — shown in bold, cannot be changed here.</p>
+      </div>
+    </section>
+
+    <!-- Teacher Output -->
+    <section id="teacherOutput" class="hidden bg-white border border-[#dce8e7] rounded-[20px] p-5">
+      <div class="mb-5">
+        <h2 id="tScheduleTitle" class="fd text-lg nafl-blue">Class PTM Schedule</h2>
+        <p id="tScheduleSubtitle" class="text-xs text-[#5d747a] mt-0.5"></p>
+      </div>
+
+      <!-- Sibling day-clash warning (shown only if a conflict is detected) -->
+      <div id="siblingClashBanner" class="hidden mb-4 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-xs text-red-800"></div>
+
+      <!-- TWO DOWNLOAD CARDS side by side -->
+      <div class="grid sm:grid-cols-2 gap-4 mb-5">
+
+        <!-- Card 1: Circular (no signature) -->
+        <div class="border-2 border-[#1a4fa0] rounded-2xl p-4 bg-[#f0f5ff]">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-lg">📄</span>
+            <div>
+              <p class="text-sm font-bold nafl-blue">Sheet 1 — PTM Circular</p>
+              <p class="text-[10px] text-[#5d747a]">Student schedule for parents · Sl. No. · Time · Name</p>
+            </div>
+          </div>
+          <p class="text-[10px] text-[#5d747a] mb-3 border-t border-[#1a4fa0]/20 pt-2">Same layout as official NAFL circular — no signature column</p>
+          <div class="flex gap-2 flex-wrap">
+            <button onclick="teacherExport('pdf','cir')" class="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-[#1a4fa0] text-white text-xs font-semibold hover:bg-[#163d80] fr">📄 PDF</button>
+            <button onclick="teacherExport('word','cir')" class="inline-flex items-center gap-1 px-3 py-2 rounded-xl border-2 border-[#1a4fa0] text-[#1a4fa0] text-xs font-semibold hover:bg-[#e8f4ff] fr">📝 Word</button>
+            <button onclick="printTeacherSchedule('cir')" class="inline-flex items-center gap-1 px-3 py-2 rounded-xl border border-[#1a4fa0]/40 text-[#1a4fa0] text-xs hover:bg-[#e8f4ff] fr">🖨️ Print</button>
+          </div>
+        </div>
+
+        <!-- Card 2: Attendance Sheet -->
+        <div class="border-2 border-[#1f8a8a] rounded-2xl p-4 bg-[#f0fbf9]">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-lg">✅</span>
+            <div>
+              <p class="text-sm font-bold text-[#1f8a8a]">Sheet 2 — Attendance Sheet</p>
+              <p class="text-[10px] text-[#5d747a]">With parent's signature column · same as circular</p>
+            </div>
+          </div>
+          <p class="text-[10px] text-[#5d747a] mb-3 border-t border-[#1f8a8a]/20 pt-2">Identical layout to circular — adds Parent's Signature column</p>
+          <div class="flex gap-2 flex-wrap">
+            <button onclick="teacherExport('pdf','att')" class="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-[#1f8a8a] text-white text-xs font-semibold hover:bg-[#166b6b] fr">📄 PDF</button>
+            <button onclick="teacherExport('word','att')" class="inline-flex items-center gap-1 px-3 py-2 rounded-xl border-2 border-[#1f8a8a] text-[#1f8a8a] text-xs font-semibold hover:bg-[#e8f7f5] fr">📝 Word</button>
+            <button onclick="printTeacherSchedule('att')" class="inline-flex items-center gap-1 px-3 py-2 rounded-xl border border-[#1f8a8a]/40 text-[#1f8a8a] text-xs hover:bg-[#e8f7f5] fr">🖨️ Print</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Excel (both sheets in one file) -->
+      <div class="flex items-center gap-3 mb-5">
+        <button onclick="teacherExport('xlsx')" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[#dce8e7] text-xs font-semibold text-[#5d747a] hover:bg-[#f7fbfa] fr">📊 Download Excel (both sheets)</button>
+        <span class="text-[10px] text-[#5d747a]">Contains Circular + Attendance in separate tabs</span>
+      </div>
+
+      <!-- Download log with timestamps -->
+      <div class="border border-[#dce8e7] rounded-xl p-3 bg-[#f8fbfb] mb-4">
+        <p class="text-[10px] font-semibold text-[#5d747a] uppercase tracking-widest mb-2">📋 Download Log</p>
+        <div id="downloadLog" class="space-y-1 max-h-28 overflow-auto ts text-[10px] text-[#5d747a]">
+          <p class="italic">No downloads yet this session.</p>
+        </div>
+      </div>
+
+      <!-- Preview table -->
+      <div class="ts overflow-x-auto border border-[#dce8e7] rounded-xl">
+        <table class="w-full min-w-[500px] text-xs">
+          <thead class="bg-[#f4faf9] text-left text-[#5d747a]">
+            <tr>
+              <th class="px-3 py-3 font-semibold">Sl. No.</th>
+              <th class="px-3 py-3 font-semibold">Time Slot</th>
+              <th class="px-3 py-3 font-semibold">Student Name</th>
+              <th class="px-3 py-3 font-semibold">Locked 🔒⭐</th>
+              <th class="px-3 py-3 font-semibold">Parent Mobile</th>
+            </tr>
+          </thead>
+          <tbody id="tScheduleBody"></tbody>
+        </table>
+      </div>
+      <p class="text-[10px] text-[#5d747a] mt-2">🔵 <strong>Bold</strong> = locked time, set by Admin &nbsp;·&nbsp; 🔒 = sibling group &nbsp;·&nbsp; ⭐ = special appointment</p>
+    </section>
+  </main>
+</section>
+
+<!-- ═══════════════════ CLASS TIMESLOT SHAREABLE VIEW ═══════════════════ -->
+<!-- Linked from circulars as e.g. index.html#class=Grade1A -->
+<section id="classLinkScreen" class="screen min-h-screen bg-[#f7fbfa]">
+  <header class="border-b border-[#dce8e7] bg-white sticky top-0 z-40 shadow-sm">
+    <div class="max-w-4xl mx-auto px-5 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <img src="data:image/png;base64,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" id="classLinkLogo" class="h-9 w-auto" alt="NAFL">
+        <div>
+          <p class="text-[10px] uppercase tracking-widest text-[#5d747a] font-semibold">PTM Time Slot</p>
+          <h2 id="classLinkHeaderTitle" class="fd text-base nafl-blue leading-tight">Class Schedule</h2>
+        </div>
+      </div>
+      <button onclick="showHome()" class="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-[#dce8e7] text-xs text-[#5d747a] hover:bg-[#f7fbfa] fr">🏠 Home</button>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-5 py-8">
+    <div id="classLinkLoading" class="text-center py-16 text-[#5d747a]">
+      <div class="text-3xl mb-3">⏳</div>
+      <p class="text-sm">Loading schedule…</p>
+    </div>
+
+    <div id="classLinkNotFound" class="hidden text-center py-16">
+      <div class="text-4xl mb-3">❓</div>
+      <p class="text-sm font-semibold text-[#12353b] mb-1">No schedule found for this class</p>
+      <p class="text-xs text-[#5d747a]">Either the link is incorrect, or Admin hasn't generated the schedule yet.</p>
+      <button onclick="showHome()" class="mt-4 inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-[#1a4fa0] text-white text-xs font-semibold">Go to Home</button>
+    </div>
+
+    <div id="classLinkContent" class="hidden">
+      <div class="text-center mb-6">
+        <div class="text-3xl mb-2">📋</div>
+        <h1 id="classLinkTitle" class="fd text-2xl nafl-blue mb-1">Grade 1 Sec A — PTM Schedule</h1>
+        <p id="classLinkSubtitle" class="text-sm text-[#5d747a]"></p>
+      </div>
+
+      <div class="bg-white border border-[#dce8e7] rounded-[20px] p-5 mb-5">
+        <div class="flex flex-wrap gap-2 justify-center mb-4">
+          <button onclick="downloadClassLinkPDF()" class="inline-flex items-center gap-1 px-4 py-2.5 rounded-xl bg-[#1a4fa0] text-white text-xs font-semibold hover:bg-[#163d80] fr">📄 Download PDF</button>
+          <button onclick="downloadClassLinkExcel()" class="inline-flex items-center gap-1 px-4 py-2.5 rounded-xl border-2 border-[#1a4fa0] text-[#1a4fa0] text-xs font-semibold hover:bg-[#e8f4ff] fr">📊 Download Excel</button>
+          <button onclick="printClassLink()" class="inline-flex items-center gap-1 px-4 py-2.5 rounded-xl border border-[#dce8e7] text-xs text-[#5d747a] hover:bg-[#f7fbfa] fr">🖨️ Print</button>
+          <button onclick="copyClassLinkURL()" class="inline-flex items-center gap-1 px-4 py-2.5 rounded-xl border border-[#dce8e7] text-xs text-[#5d747a] hover:bg-[#f7fbfa] fr">🔗 Copy Link</button>
+        </div>
+        <div class="ts overflow-x-auto border border-[#dce8e7] rounded-xl">
+          <table class="w-full min-w-[500px] text-xs">
+            <thead class="bg-[#e8f4ff] text-left text-[#1a4fa0]">
+              <tr>
+                <th class="px-3 py-3 font-bold">Sl. No.</th>
+                <th class="px-3 py-3 font-bold">Time Slot</th>
+                <th class="px-3 py-3 font-bold">Student Name</th>
+              </tr>
+            </thead>
+            <tbody id="classLinkBody"></tbody>
+          </table>
+        </div>
+        <p class="text-[10px] text-[#5d747a] mt-2">🔒⭐ <strong>Bold</strong> rows have a fixed Admin-locked time.</p>
+      </div>
+      <p class="text-center text-[10px] text-[#9aa5b4]">This link can be bookmarked or shared — it always shows the latest schedule for this class.</p>
+    </div>
+  </main>
+</section>
+
+<div id="toastArea" class="fixed top-4 right-4 z-[999] space-y-2 pointer-events-none max-w-xs"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// STATE — persisted in a shared Google Sheet via Apps Script API
+// so ALL teachers on ALL devices see the same live data
+// ═══════════════════════════════════════════
+let records=[], siblingGroups=[], teacherRows=[], failedList=[];
+let _nid=1;
+
+// ⚠️ PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE ⚠️
+// See HOW_TO_DEPLOY.html → "Connect Google Sheets Backend" for setup steps.
+// It looks like: https://script.google.com/macros/s/AKfycb.../exec
+const API_URL = 'PASTE_YOUR_APPS_SCRIPT_URL_HERE';
+
+let SETTINGS = {
+  schoolName:'National Academy for Learning',
+  schoolCity:'North Bengaluru',
+  term:'1',
+  year:'2025-26',
+  adminEmail:'bchethana@naflnorth.com'
+};
+
+const ADMIN_USERNAME = 'PTMCom';
+let adminPassword = 'PTM@123'; // fallback only — real password comes from the sheet
+let _resetOTP = '';
+let _apiReady = false;
+let _saveInFlight = false;
+let _pendingSave = false;
+
+// ── Local fallback cache (used only if API is unreachable) ────────
+const LOCAL_CACHE_KEY='nafl_ptm_cache_v1';
+function cacheLocally(){
+  try{ localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({records,SETTINGS,ts:Date.now()})); }catch(e){}
+}
+function loadLocalCache(){
+  try{
+    const raw=localStorage.getItem(LOCAL_CACHE_KEY);
+    if(raw){ const c=JSON.parse(raw); return c; }
+  }catch(e){}
+  return null;
+}
+
+// ── Low-level API helper ────────────────────────────────────────────
+async function apiGet(action){
+  if(!API_URL || API_URL==='PASTE_YOUR_APPS_SCRIPT_URL_HERE') return {ok:false,error:'API_URL not configured'};
+  try{
+    const res=await fetch(`${API_URL}?action=${action}`);
+    return await res.json();
+  }catch(e){
+    return {ok:false,error:e.message};
+  }
+}
+async function apiPost(action,payload){
+  if(!API_URL || API_URL==='PASTE_YOUR_APPS_SCRIPT_URL_HERE') return {ok:false,error:'API_URL not configured'};
+  try{
+    const res=await fetch(API_URL,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'}, // text/plain avoids CORS preflight on Apps Script
+      body:JSON.stringify({action,payload})
+    });
+    return await res.json();
+  }catch(e){
+    return {ok:false,error:e.message};
+  }
+}
+
+// ── Connection banner ────────────────────────────────────────────────
+function showConnectionBanner(state){
+  let el=document.getElementById('connBanner');
+  if(!el){
+    el=document.createElement('div');
+    el.id='connBanner';
+    el.style.cssText='position:fixed;top:0;left:0;right:0;z-index:998;text-align:center;font-size:12px;font-weight:600;padding:6px;display:none';
+    document.body.prepend(el);
+  }
+  if(state==='offline'){
+    el.style.display='block';
+    el.style.background='#fff3cd'; el.style.color='#856404';
+    el.textContent='⚠️ Not connected to shared database — showing local data only. Check API_URL setup in index.html.';
+  } else if(state==='syncing'){
+    el.style.display='block';
+    el.style.background='#e8f4ff'; el.style.color='#1a4fa0';
+    el.textContent='🔄 Syncing with shared database…';
+  } else if(state==='online'){
+    el.style.display='none';
+  }
+}
+
+// ── Load everything from the shared backend ─────────────────────────
+async function loadFromBackend(){
+  showConnectionBanner('syncing');
+  const [recRes, setRes, authRes] = await Promise.all([
+    apiGet('getRecords'),
+    apiGet('getSettings'),
+    apiGet('getAuth')
+  ]);
+
+  if(recRes.ok && setRes.ok && authRes.ok){
+    _apiReady=true;
+    records = recRes.data || [];
+    SETTINGS = setRes.data || SETTINGS;
+    adminPassword = authRes.data.password || adminPassword;
+    _nid = records.reduce((mx,r)=>{
+      const n=parseInt((r._id||'').replace('AUTO_',''))||0;
+      return Math.max(mx,n+1);
+    },1);
+    cacheLocally();
+    showConnectionBanner('online');
+  } else {
+    // Backend unreachable — fall back to last local cache so the page still works
+    _apiReady=false;
+    showConnectionBanner('offline');
+    const cache=loadLocalCache();
+    if(cache){
+      records=cache.records||[];
+      SETTINGS=cache.SETTINGS||SETTINGS;
+    }
+  }
+
+  detectSiblings();
+  renderAdminTable();
+  updateMetrics();
+  populateTGrade();
+  applySettings();
+
+  if(records.length){
+    document.getElementById('uploadStatus').textContent=
+      `✓ ${records.length} records loaded ${_apiReady?'from shared database':'from local cache (offline)'}.`;
+    document.getElementById('scheduleStatus').textContent=
+      records.filter(r=>r.timing).length>0
+        ?`${records.filter(r=>r.timing).length} students already scheduled. Ready.`
+        :'Records loaded. Click Generate Schedule.';
+    document.getElementById('statFinal').textContent=records.length;
+  }
+}
+
+// ── Save records to the shared backend (debounced so rapid edits don't spam the API) ──
+async function persistRecords(){
+  cacheLocally(); // always keep local fallback fresh
+  if(_saveInFlight){ _pendingSave=true; return; }
+  _saveInFlight=true;
+  const res = await apiPost('saveRecords',{records});
+  _saveInFlight=false;
+  if(!res.ok){
+    showConnectionBanner('offline');
+    toast('⚠️ Could not save to shared database. Your data is kept locally — try again when online.','error');
+  } else {
+    showConnectionBanner('online');
+  }
+  if(_pendingSave){ _pendingSave=false; persistRecords(); }
+}
+
+async function persistSettings(){
+  cacheLocally();
+  const res = await apiPost('saveSettings',{settings:SETTINGS});
+  if(!res.ok) toast('⚠️ Settings saved locally only — could not reach shared database.','error');
+}
+
+async function persistPassword(newPwd){
+  const res = await apiPost('savePassword',{password:newPwd});
+  if(!res.ok) toast('⚠️ Password change not synced to shared database (saved for this device only).','error');
+}
+
+async function logDownloadRemote(entry){
+  // Fire-and-forget — don't block the download on this
+  apiPost('logDownload',{entry}).catch(()=>{});
+}
+
+lucide.createIcons();
+// Load shared data from backend as soon as the page opens
+loadFromBackend().then(()=>{
+  handleHashRoute(); // check if URL points to a specific class link (e.g. #class=Grade1A)
+});
+window.addEventListener('hashchange',handleHashRoute);
+
+// ── CLASS LINK ROUTING ──────────────────────────────────────────────
+// Lets a circular reference a specific class as a shareable link, e.g.
+//   https://yourschool.github.io/nafl-ptm/#class=Grade1A
+// Opening that URL jumps straight to that class's schedule with a
+// download button, bypassing the home screen and login entirely.
+function classKeyToSlug(grade,section){
+  // "Grade 1" + "A" -> "Grade1A"   ·   "Kindergarten - 1" + "A" -> "Kindergarten1A"
+  const g=String(grade||'').replace(/[^a-zA-Z0-9]/g,'');
+  const s=String(section||'').replace(/[^a-zA-Z0-9]/g,'');
+  return `${g}${s}`;
+}
+function buildClassLink(grade,section){
+  const slug=classKeyToSlug(grade,section);
+  const base=window.location.href.split('#')[0];
+  return `${base}#class=${slug}`;
+}
+function handleHashRoute(){
+  const hash=window.location.hash; // e.g. "#class=Grade1A"
+  const m=hash.match(/^#class=(.+)$/);
+  if(!m){ return; } // no special route — normal home/admin/teacher navigation applies
+  const slug=decodeURIComponent(m[1]);
+  showClassLinkView(slug);
+}
+let _currentClassLinkSlug=null;
+function showClassLinkView(slug){
+  _currentClassLinkSlug=slug;
+  showScreen('classLinkScreen');
+  document.getElementById('classLinkLoading').classList.remove('hidden');
+  document.getElementById('classLinkNotFound').classList.add('hidden');
+  document.getElementById('classLinkContent').classList.add('hidden');
+
+  // Find every record whose grade+section slug matches
+  const matched=records.filter(r=>classKeyToSlug(r.grade,r.section)===slug && r.timing);
+  document.getElementById('classLinkLoading').classList.add('hidden');
+
+  if(!matched.length){
+    document.getElementById('classLinkNotFound').classList.remove('hidden');
+    return;
+  }
+
+  const {grade,section}=matched[0];
+  const sorted=[...matched].sort((a,b)=>{
+    const ai=a.slot_idx!=null?a.slot_idx:9999, bi=b.slot_idx!=null?b.slot_idx:9999;
+    return ai-bi;
+  });
+
+  document.getElementById('classLinkHeaderTitle').textContent=`Grade ${grade} ${section}`;
+  document.getElementById('classLinkTitle').textContent=`Grade ${grade} Sec ${section} — PTM Schedule`;
+  document.getElementById('classLinkSubtitle').textContent=`${SETTINGS.schoolName} · ${termLabel()}`;
+
+  const body=document.getElementById('classLinkBody');
+  body.innerHTML=sorted.map((r,i)=>{
+    const isLocked=r.is_sibling||(r.special_appt&&r.special_appt.time);
+    const b=isLocked?'font-weight:bold':'';
+    return `<tr class="border-t border-[#edf3f2]">
+      <td class="px-3 py-2.5 text-[#5d747a]" style="${b}">${i+1}</td>
+      <td class="px-3 py-2.5 text-[#1a4fa0]" style="${b}">${r.timing}</td>
+      <td class="px-3 py-2.5 font-semibold" style="${b}">${r.student_name}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('classLinkContent').classList.remove('hidden');
+}
+
+function downloadClassLinkPDF(){
+  const matched=records.filter(r=>classKeyToSlug(r.grade,r.section)===_currentClassLinkSlug && r.timing);
+  if(!matched.length){toast('No data to export','error');return;}
+  const {grade,section}=matched[0];
+  const sorted=[...matched].sort((a,b)=>(a.slot_idx||0)-(b.slot_idx||0));
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF('p','pt','a4');
+  const pw=doc.internal.pageSize.getWidth();
+  let y=40;
+  doc.setFont('times','bold');doc.setFontSize(14);doc.setTextColor(0,0,0);
+  doc.text(SETTINGS.schoolName,pw/2,y,{align:'center'});y+=18;
+  doc.setFont('times','normal');doc.setFontSize(10);
+  doc.text(SETTINGS.schoolCity,pw/2,y,{align:'center'});y+=14;
+  doc.setFont('times','bold');doc.setFontSize(12);
+  doc.text(termHeader(),pw/2,y,{align:'center'});y+=20;
+  doc.setTextColor(26,79,160);
+  doc.text(`Grade: ${grade}  Sec: ${section}`,40,y);y+=18;
+  doc.setTextColor(0,0,0);
+  doc.autoTable({
+    startY:y,
+    head:[['Sl. No.','TIME SLOT','STUDENT NAME']],
+    body:sorted.map((r,i)=>{
+      const isLocked=r.is_sibling||(r.special_appt&&r.special_appt.time);
+      const fs=isLocked?'bold':'normal';
+      return [
+        {content:String(i+1),styles:{halign:'center',font:'times',fontStyle:fs}},
+        {content:r.timing,styles:{halign:'center',font:'times',fontStyle:fs}},
+        {content:r.student_name,styles:{font:'times',fontStyle:fs}}
+      ];
+    }),
+    headStyles:{fillColor:[252,232,213],textColor:[0,0,0],fontStyle:'bold',font:'times',fontSize:11},
+    bodyStyles:{font:'times',fontSize:11},
+    margin:{left:40,right:40},theme:'grid'
+  });
+  doc.save(`${grade}${section}_Timeslot.pdf`.replace(/\s+/g,''));
+  toast('PDF downloaded','success');
+}
+
+function downloadClassLinkExcel(){
+  const matched=records.filter(r=>classKeyToSlug(r.grade,r.section)===_currentClassLinkSlug && r.timing);
+  if(!matched.length){toast('No data to export','error');return;}
+  const {grade,section}=matched[0];
+  const sorted=[...matched].sort((a,b)=>(a.slot_idx||0)-(b.slot_idx||0));
+  const aoa=[[SETTINGS.schoolName],[SETTINGS.schoolCity],[termHeader()],[`Grade: ${grade} Sec: ${section}`],[],
+    ['Sl. No.','TIME SLOT','STUDENT NAME']];
+  sorted.forEach((r,i)=>{
+    const isLocked=r.is_sibling||(r.special_appt&&r.special_appt.time);
+    aoa.push([i+1,r.timing,r.student_name+(isLocked?' *':'')]);
+  });
+  aoa.push([],['* Fixed/locked time (sibling or special appointment)']);
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:8},{wch:22},{wch:32}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Timeslot');
+  // Standard .xlsx — opens cleanly in Excel Desktop, Excel Online, and Microsoft Teams' built-in viewer
+  XLSX.writeFile(wb,`${grade}${section}_Timeslot.xlsx`.replace(/\s+/g,''));
+  toast('Excel downloaded — opens in Excel or Microsoft Teams','success');
+}
+
+function printClassLink(){
+  const matched=records.filter(r=>classKeyToSlug(r.grade,r.section)===_currentClassLinkSlug && r.timing);
+  if(!matched.length){toast('No data to print','error');return;}
+  const {grade,section}=matched[0];
+  const sorted=[...matched].sort((a,b)=>(a.slot_idx||0)-(b.slot_idx||0));
+  let rows=sorted.map((r,i)=>{
+    const isLocked=r.is_sibling||(r.special_appt&&r.special_appt.time);
+    const b=isLocked?'font-weight:bold':'';
+    return `<tr><td style="text-align:center;${b}">${i+1}</td><td style="text-align:center;${b}">${r.timing}</td><td style="${b}">${r.student_name}</td></tr>`;
+  }).join('');
+  const win=window.open('','_blank');
+  win.document.write(`<html><head><title>${grade}${section} Timeslot</title>
+    <style>body{font-family:'Times New Roman',serif;font-size:12pt;padding:20px}
+    table{width:100%;border-collapse:collapse}th,td{border:1px solid #333;padding:6pt}
+    th{background:#fce8d5;text-align:center}h1,h2,h3{text-align:center;margin:4px 0}
+    @media print{@page{margin:1.5cm}}</style></head><body>
+    <h2>${SETTINGS.schoolName}</h2><h3>${SETTINGS.schoolCity}</h3><h3>${termHeader()}</h3>
+    <p style="color:#1a4fa0;font-weight:bold">Grade: ${grade}  Sec: ${section}</p>
+    <table><tr><th>Sl. No.</th><th>TIME SLOT</th><th>STUDENT NAME</th></tr>${rows}</table>
+    <script>window.print()<\/script></body></html>`);
+  win.document.close();
+}
+
+function copyClassLinkURL(){
+  const url=window.location.href;
+  navigator.clipboard.writeText(url).then(()=>{
+    toast('Link copied! Paste it into the circular or share directly.','success');
+  }).catch(()=>{
+    toast('Could not copy automatically — select and copy the address bar URL.','error');
+  });
+}
+
+function termLabel(){ return `Term ${SETTINGS.term} · ${SETTINGS.year}`; }
+function termHeader(){ return `Term -${SETTINGS.term} Parent Teacher Meeting ${SETTINGS.year}`; }
+
+function showHomeTermEditor(){
+  document.getElementById('hteTerm').value=SETTINGS.term;
+  document.getElementById('hteYear').value=SETTINGS.year;
+  document.getElementById('homeTermEditor').classList.remove('hidden');
+}
+function saveHomeTerm(){
+  SETTINGS.term=document.getElementById('hteTerm').value||'1';
+  SETTINGS.year=document.getElementById('hteYear').value.trim()||SETTINGS.year;
+  document.getElementById('homeTermEditor').classList.add('hidden');
+  applySettings();
+  toast('Term & Year updated across all screens and documents','success');
+}
+function applySettings(){
+  // Update all UI labels
+  ['homeSchoolName','adminHeaderTitle','tPortalTitle'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el&&id==='homeSchoolName') el.textContent=SETTINGS.schoolName;
+    if(el&&id!=='homeSchoolName') el.textContent=`${SETTINGS.schoolName} PTM`;
+  });
+  const city=`${SETTINGS.schoolName} · ${SETTINGS.schoolCity}`;
+  const hc=document.getElementById('homeSchoolCity');
+  if(hc) hc.textContent=city;
+  const sub=document.getElementById('tPortalSub');
+  if(sub) sub.textContent=`Teacher Portal · ${SETTINGS.schoolCity}`;
+  const tl=termLabel();
+  ['homeTermBadge','adminTermBadge','tTermBadge'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.textContent=tl;
+  });
+  const ht=document.getElementById('homeTitle');
+  if(ht) ht.textContent='Parent Teacher Meeting Portal';
+  const htl=document.getElementById('homeTermLabel');
+  if(htl) htl.textContent=`${tl} · ${SETTINGS.schoolName}`;
+  const lsl=document.getElementById('loginSchoolLabel');
+  if(lsl) lsl.textContent=SETTINGS.schoolName;
+}
+
+// ═══════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+  setTimeout(()=>lucide.createIcons(),50);
+}
+function showHome(){ showScreen('homeScreen'); }
+async function showTeacherPortal(){
+  showScreen('teacherScreen');
+  toast('Refreshing latest schedule…','info');
+  await loadFromBackend();
+  updateDayCountStatus();
+}
+async function refreshTeacherData(){
+  toast('Refreshing…','info');
+  await loadFromBackend();
+  updateDayCountStatus();
+  toast('Schedule refreshed','success');
+}
+function doLogout(){ showHome(); toast('Logged out. Student data remains saved for teachers.','info'); }
+function togglePwdVis(id){
+  const el=document.getElementById(id);
+  el.type=el.type==='password'?'text':'password';
+}
+
+// ═══════════════════════════════════════════
+// ADMIN LOGIN — any username + password
+// ═══════════════════════════════════════════
+function showAdminLogin(){
+  document.getElementById('loginUser').value='';
+  document.getElementById('loginPass').value='';
+  document.getElementById('loginErr').classList.add('hidden');
+  document.getElementById('loginModal').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('loginUser').focus(),100);
+}
+function closeLogin(){ document.getElementById('loginModal').classList.add('hidden'); }
+function doLogin(){
+  const user=document.getElementById('loginUser').value.trim();
+  const pw=document.getElementById('loginPass').value;
+  const err=document.getElementById('loginErr');
+  if(!user){
+    err.textContent='Please enter your username.'; err.classList.remove('hidden'); return;
+  }
+  if(user!==ADMIN_USERNAME){
+    err.textContent='Incorrect username.'; err.classList.remove('hidden'); return;
+  }
+  if(pw!==adminPassword){
+    err.textContent='Incorrect password. Use "Forgot password?" to reset via email.';
+    err.classList.remove('hidden'); return;
+  }
+  closeLogin();
+  sessionStorage.setItem('nafl_auth','1');
+  renderAdminTable(); updateMetrics(); populateTGrade();
+  showScreen('adminScreen');
+  toast('Welcome, Admin!','success');
+}
+
+// ═══════════════════════════════════════════
+// FORGOT / RESET PASSWORD — email authentication
+// ═══════════════════════════════════════════
+function showForgotPwd(){
+  closeLogin();
+  document.getElementById('resetEmail').value='';
+  document.getElementById('resetEmailErr').classList.add('hidden');
+  document.getElementById('resetStep1').classList.remove('hidden');
+  document.getElementById('resetStep2').classList.add('hidden');
+  document.getElementById('resetModal').classList.remove('hidden');
+}
+function closeReset(){
+  document.getElementById('resetModal').classList.add('hidden');
+  _resetOTP='';
+}
+function sendResetOTP(){
+  const em=document.getElementById('resetEmail').value.trim().toLowerCase();
+  const err=document.getElementById('resetEmailErr');
+  if(em!==SETTINGS.adminEmail.toLowerCase()){
+    err.textContent='This email is not registered as admin. Contact school IT.';
+    err.classList.remove('hidden'); return;
+  }
+  // Generate 6-digit OTP (in real app this would be emailed; here we simulate)
+  _resetOTP=String(Math.floor(100000+Math.random()*900000));
+  console.log('OTP for demo:',_resetOTP); // In production, remove this
+  document.getElementById('resetEmailDisplay').textContent=em;
+  document.getElementById('resetStep1').classList.add('hidden');
+  document.getElementById('resetStep2').classList.remove('hidden');
+  document.getElementById('otpInput').value='';
+  document.getElementById('resetNewPwd').value='';
+  document.getElementById('resetConfirmPwd').value='';
+  document.getElementById('resetOTPErr').classList.add('hidden');
+  // Show OTP in a demo toast since we can't email
+  toast(`Demo mode: Your OTP is ${_resetOTP} (in production this would be emailed)`,'info');
+}
+function checkResetStrength(){
+  const v=document.getElementById('resetNewPwd').value;
+  pwStrength(v,'resetPwdBar','resetPwdHint');
+}
+function doResetPassword(){
+  const otp=document.getElementById('otpInput').value.trim();
+  const nw=document.getElementById('resetNewPwd').value;
+  const cf=document.getElementById('resetConfirmPwd').value;
+  const err=document.getElementById('resetOTPErr');
+  if(otp!==_resetOTP){err.textContent='Incorrect verification code.';err.classList.remove('hidden');return;}
+  if(nw.length<6){err.textContent='Password must be at least 6 characters.';err.classList.remove('hidden');return;}
+  if(nw!==cf){err.textContent='Passwords do not match.';err.classList.remove('hidden');return;}
+  adminPassword=nw;
+  persistPassword(nw);
+  _resetOTP='';
+  closeReset();
+  toast('Password reset successfully! Please log in with your new password.','success');
+}
+
+// ═══════════════════════════════════════════
+// SCHOOL SETTINGS
+// ═══════════════════════════════════════════
+function showSchoolSettings(){
+  document.getElementById('setSchoolName').value=SETTINGS.schoolName;
+  document.getElementById('setSchoolCity').value=SETTINGS.schoolCity;
+  document.getElementById('setTerm').value=SETTINGS.term;
+  document.getElementById('setYear').value=SETTINGS.year;
+  document.getElementById('setAdminEmail').value=SETTINGS.adminEmail;
+  document.getElementById('schoolSettingsModal').classList.remove('hidden');
+}
+function saveSchoolSettings(){
+  SETTINGS.schoolName=document.getElementById('setSchoolName').value.trim()||SETTINGS.schoolName;
+  SETTINGS.schoolCity=document.getElementById('setSchoolCity').value.trim()||SETTINGS.schoolCity;
+  SETTINGS.term=document.getElementById('setTerm').value||'1';
+  SETTINGS.year=document.getElementById('setYear').value.trim()||SETTINGS.year;
+  SETTINGS.adminEmail=document.getElementById('setAdminEmail').value.trim()||SETTINGS.adminEmail;
+  persistSettings();
+  document.getElementById('schoolSettingsModal').classList.add('hidden');
+  applySettings();
+  toast('Settings saved!','success');
+}
+
+// ═══════════════════════════════════════════
+// CHANGE PASSWORD (from inside admin panel)
+// ═══════════════════════════════════════════
+function showChangePwd(){
+  document.getElementById('cpCurrent').value='';
+  document.getElementById('cpNew').value='';
+  document.getElementById('cpConfirm').value='';
+  document.getElementById('cpErr').classList.add('hidden');
+  document.getElementById('changePwdModal').classList.remove('hidden');
+}
+function checkCPStrength(){ pwStrength(document.getElementById('cpNew').value,'cpBar','cpHint'); }
+function doChangePwd(){
+  const cur=document.getElementById('cpCurrent').value;
+  const nw=document.getElementById('cpNew').value;
+  const cf=document.getElementById('cpConfirm').value;
+  const err=document.getElementById('cpErr');
+  if(cur!==adminPassword){err.textContent='Current password is incorrect.';err.classList.remove('hidden');return;}
+  if(nw.length<6){err.textContent='New password must be at least 6 characters.';err.classList.remove('hidden');return;}
+  if(nw!==cf){err.textContent='Passwords do not match.';err.classList.remove('hidden');return;}
+  adminPassword=nw;
+  persistPassword(nw);
+  document.getElementById('changePwdModal').classList.add('hidden');
+  toast('Password updated successfully!','success');
+}
+function pwStrength(v,barId,hintId){
+  let s=0;
+  if(v.length>=8)s++; if(/[A-Z]/.test(v))s++; if(/[0-9]/.test(v))s++; if(/[^A-Za-z0-9]/.test(v))s++;
+  const cols=['','#ef4444','#f59e0b','#22c55e','#16a34a'];
+  const labs=['','Weak','Fair','Good','Strong'];
+  document.getElementById(barId).style.cssText=`width:${s*25}%;background:${cols[s]||'#e5e7eb'}`;
+  document.getElementById(hintId).textContent=labs[s]||'';
+}
+
+// ═══════════════════════════════════════════
+// FILE IMPORT
+// ═══════════════════════════════════════════
+document.getElementById('fileInput').addEventListener('change',handleFile);
+function mapCol(k){
+  const n=k.toLowerCase().replace(/[^a-z0-9]/g,'');
+  const M={acadamisid:'acadamis_id',academicid:'acadamis_id',studentid:'acadamis_id',
+    admissionno:'admission_no',admno:'admission_no',admission:'admission_no',admissionnumber:'admission_no',
+    rollno:'roll_no',roll:'roll_no',rollnumber:'roll_no',
+    studentname:'student_name',student:'student_name',name:'student_name',fullname:'student_name',childname:'student_name',
+    class:'grade',grade:'grade',std:'grade',standard:'grade',classname:'grade',
+    section:'section',sec:'section',division:'section',div:'section',
+    siblingsdetails:'sibling_details',siblingdetails:'sibling_details',sibling:'sibling_details',siblings:'sibling_details',familycode:'sibling_details',
+    parentmobile:'parent_mobile',mobile:'parent_mobile',phone:'parent_mobile',contact:'parent_mobile',parentphone:'parent_mobile',
+    timing:'_skip',time:'_skip',timeslot:'_skip',
+    slno:'_skip',sno:'_skip'}; // SL NO. is just a row counter, not used for matching
+  return M[n]||null;
+}
+function handleFile(e){
+  const f=e.target.files[0]; if(!f)return;
+  const ext=f.name.toLowerCase().split('.').pop();
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const wb=XLSX.read(ev.target.result,{type:ext==='csv'?'string':'array'});
+      let bestSheet=wb.SheetNames[0];
+      let bestRows=[];
+      // Try every sheet, using raw-array parsing + manual header detection
+      // (sheet_to_json's auto-header sometimes misfires on legacy .xls files,
+      //  producing "__EMPTY_1", "__EMPTY_2" instead of real column names)
+      for(const s of wb.SheetNames){
+        const rows=parseSheetWithHeaderDetection(wb.Sheets[s]);
+        if(rows.length>bestRows.length){ bestRows=rows; bestSheet=s; }
+      }
+      if(!bestRows.length){document.getElementById('uploadStatus').textContent='No data found.';return;}
+      showDebug(Object.keys(bestRows[0]||{}),bestSheet);
+      importRows(bestRows,f.name);
+    }catch(err){document.getElementById('uploadStatus').textContent='Error: '+err.message;}
+  };
+  if(ext==='csv')reader.readAsText(f);else reader.readAsArrayBuffer(f);
+}
+
+// Reads a sheet as raw rows, finds the row that actually looks like a header
+// (contains recognizable column names), then builds {header: value} objects
+// from every row after it. This avoids SheetJS misdetecting the header row
+// on legacy .xls files, which produces "__EMPTY_N" placeholder keys.
+function parseSheetWithHeaderDetection(sheet){
+  const raw=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:false,blankrows:false});
+  if(!raw.length) return [];
+
+  // A row "looks like a header" if at least 2 of its cells match known column terms
+  const KNOWN_TERMS=['name','class','grade','section','sec','roll','admission','adm','acadamis',
+    'id','sibling','mobile','phone','sl','student','std'];
+  function looksLikeHeader(row){
+    let hits=0;
+    row.forEach(cell=>{
+      const c=String(cell||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+      if(KNOWN_TERMS.some(term=>c.includes(term))) hits++;
+    });
+    return hits>=2;
+  }
+
+  // Scan the first 10 rows for the real header row (handles blank/title rows above it)
+  let headerIdx=-1;
+  for(let i=0;i<Math.min(10,raw.length);i++){
+    if(looksLikeHeader(raw[i])){ headerIdx=i; break; }
+  }
+  if(headerIdx===-1) headerIdx=0; // fallback: assume row 0 is the header
+
+  const headers=raw[headerIdx].map(h=>String(h||'').trim());
+  const dataRows=raw.slice(headerIdx+1);
+
+  return dataRows
+    .filter(row=>row.some(cell=>String(cell||'').trim()!==''))
+    .map(row=>{
+      const obj={};
+      headers.forEach((h,i)=>{ if(h) obj[h]=row[i]!==undefined?String(row[i]).trim():''; });
+      return obj;
+    });
+}
+function showDebug(headers,sheet){
+  document.getElementById('debugPanel').classList.remove('hidden');
+  document.getElementById('debugHeaders').innerHTML=`<b>Sheet: "${sheet}"</b><br>`+
+    headers.map(h=>{const m=mapCol(h);return`${h} → <span style="color:${m&&m!=='_skip'?'green':'red'}">${m&&m!=='_skip'?m:'skipped'}</span>`;}).join('<br>');
+}
+function importRows(rows,fname){
+  const headers=Object.keys(rows[0]||{});
+  const hmap={};
+  headers.forEach(h=>{const t=mapCol(h);if(t&&t!=='_skip')hmap[h]=t;});
+  const existKeys=new Set(records.map(r=>rKey(r)));
+  const batchSeen=new Set();
+  const imported=[];
+  failedList=[];
+  let dup=0,fail=0;
+  rows.forEach((row,idx)=>{
+    const m={};
+    headers.forEach(h=>{if(hmap[h])m[hmap[h]]=String(row[h]||'').trim();});
+    const name=m.student_name||'';
+    let grade=(m.grade||'').trim();
+    let sec=(m.section||'').trim().toUpperCase();
+    if(!sec){const mx=grade.match(/^(.+?)\s*([A-Za-z])$/);if(mx){grade=mx[1].trim();sec=mx[2].toUpperCase();}else sec='-';}
+    if(!name){fail++;failedList.push({row:idx+2,name:'—',reason:'Missing Name'});return;}
+    if(!grade){fail++;failedList.push({row:idx+2,name,reason:'Missing Grade'});return;}
+    const k=rKey({student_name:name,grade,section:sec});
+    if(existKeys.has(k)||batchSeen.has(k)){dup++;return;}
+    batchSeen.add(k);
+    const aid=m.acadamis_id||`AUTO_${_nid++}`;
+    imported.push({_id:aid,acadamis_id:m.acadamis_id||'-',admission_no:m.admission_no||'-',roll_no:m.roll_no||'-',
+      student_name:name,grade,section:sec,sibling_details:m.sibling_details||'',parent_mobile:m.parent_mobile||'',
+      sibling_group:'',is_sibling:false,timing:'',slot_idx:-1,status:'Imported'});
+  });
+  records.push(...imported);
+  persistRecords();
+  document.getElementById('statFound').textContent=rows.length;
+  document.getElementById('statImported').textContent=imported.length;
+  document.getElementById('statDups').textContent=dup;
+  document.getElementById('statFail').textContent=fail;
+  document.getElementById('statFinal').textContent=records.length;
+  document.getElementById('mFailed').textContent=fail;
+  showFailSection();
+  detectSiblings();
+  renderAdminTable();
+  updateMetrics();
+  populateTGrade();
+  document.getElementById('uploadStatus').textContent=`${fname}: ${rows.length} rows → ${imported.length} imported, ${dup} duplicates, ${fail} failed.`;
+  document.getElementById('scheduleStatus').textContent=`${records.length} students ready. Click Generate Schedule.`;
+  toast(`✓ ${imported.length} records imported`,'success');
+}
+function rKey(r){return`${(r.student_name||'').toLowerCase()}|${(r.grade||'').toLowerCase()}|${(r.section||'').toLowerCase()}`;}
+function showFailSection(){
+  const sec=document.getElementById('failSection'),lst=document.getElementById('failList');
+  lst.innerHTML='';
+  if(!failedList.length){sec.classList.add('hidden');return;}
+  sec.classList.remove('hidden');
+  failedList.slice(0,30).forEach(r=>{
+    const d=document.createElement('div');
+    d.className='flex justify-between gap-2 bg-red-50 border border-red-100 rounded px-2 py-1';
+    d.innerHTML=`<span><b>Row ${r.row}</b>: ${r.name}</span><span class="text-red-600">${r.reason}</span>`;
+    lst.appendChild(d);
+  });
+}
+
+// ═══════════════════════════════════════════
+// SIBLING DETECTION
+// ═══════════════════════════════════════════
+function detectSiblings(){
+  siblingGroups=[];
+  records.forEach(r=>{r.sibling_group='';r.is_sibling=false;});
+  const assigned=new Set();
+  let gi=1;
+  records.forEach(s=>{
+    if(!s.sibling_details||assigned.has(s._id))return;
+    const det=s.sibling_details.toLowerCase();
+    const matched=records.filter(o=>o._id!==s._id&&det.includes(o.student_name.toLowerCase()));
+    if(matched.length){
+      const id=`SG${String(gi++).padStart(3,'0')}`;
+      [s,...matched].forEach(m=>{m.sibling_group=id;m.is_sibling=true;assigned.add(m._id);});
+      siblingGroups.push({id,members:[s,...matched]});
+    }
+  });
+  renderSiblingPreview();
+}
+function renderSiblingPreview(){
+  const w=document.getElementById('siblingPreview');
+  w.innerHTML='';
+  if(!siblingGroups.length){w.innerHTML='<div class="rounded-xl border border-dashed border-[#dce8e7] p-3 text-xs text-[#5d747a]">No sibling groups detected yet.</div>';return;}
+  siblingGroups.forEach(g=>{
+    const d=document.createElement('div');
+    d.className='rounded-xl border border-amber-200 p-3 bg-amber-50/40 text-xs mb-2';
+    // Build member rows showing timing if already scheduled
+    const memberRows=g.members.map(m=>{
+      const hasTiming=m.timing&&m.timing!=='';
+      const timingTag=hasTiming
+        ?`<span class="ml-1 bg-[#1a4fa0] text-white rounded px-1.5 py-0.5 font-bold text-[10px]">⏰ ${m.timing}</span>`
+        :`<span class="ml-1 bg-gray-100 text-gray-400 rounded px-1.5 py-0.5 text-[10px]">not yet scheduled</span>`;
+      return `<div class="flex items-center gap-1 mt-1"><b>${m.student_name}</b> <span class="text-[#5d747a]">(${m.grade} ${m.section})</span>${timingTag}</div>`;
+    }).join('');
+    // Gap indicator between siblings if scheduled
+    let gapInfo='';
+    const scheduled=g.members.filter(m=>m.slot_idx>=0);
+    if(scheduled.length>=2){
+      const idxs=scheduled.map(m=>m.slot_idx).sort((a,b)=>a-b);
+      const gaps=[];
+      for(let i=0;i<idxs.length-1;i++) gaps.push((idxs[i+1]-idxs[i])*10);
+      const minGap=Math.min(...gaps);
+      const maxGap=Math.max(...gaps);
+      const gapOk=minGap>=20;
+      gapInfo=`<span class="ml-2 ${gapOk?'text-green-700 bg-green-50':'text-red-700 bg-red-50'} rounded px-1.5 py-0.5 text-[10px] font-semibold">
+        ${gapOk?'✓':'⚠️'} Gap: ${minGap===maxGap?minGap+'min':minGap+'-'+maxGap+'min'}
+      </span>`;
+    }
+    d.innerHTML=`<div class="flex items-center justify-between mb-1">
+      <span class="font-bold text-amber-700 text-sm">🔒 ${g.id}</span>
+      <div class="flex items-center gap-1"><span class="text-[#5d747a]">${g.members.length} students</span>${gapInfo}</div>
+    </div>${memberRows}`;
+    w.appendChild(d);
+  });
+}
+
+// ═══════════════════════════════════════════
+// TIME HELPERS
+// ═══════════════════════════════════════════
+function toMin(t){const[h,m]=t.split(':').map(Number);return h*60+m;}
+function fromMin(m){return`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;}
+function fmtAmPm(t){const[h,m]=t.split(':').map(Number);const ap=h>=12?'p.m.':'a.m.';const h12=h%12||12;return`${h12}:${String(m).padStart(2,'0')} ${ap}`;}
+function fmtDateLong(d){
+  if(!d)return'';
+  const dt=new Date(d+'T00:00:00');
+  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const day=dt.getDate();
+  const suf=[,'st','nd','rd'][day%10]&&![11,12,13].includes(day%100)?[,'st','nd','rd'][day%10]:'th';
+  return`${days[dt.getDay()]}, ${day}${suf} ${months[dt.getMonth()]} ${dt.getFullYear()}`;
+}
+function buildDaySlots(startT,endT,b1s,b1e,b1l,b2s,b2e,b2l){
+  const sm=toMin(startT),em=toMin(endT);
+  // A break is "active" only if both its start and end times are provided.
+  // Pass null/empty for b1s/b2s etc. to disable that break entirely.
+  const hasB1=!!(b1s&&b1e);
+  const hasB2=!!(b2s&&b2e);
+  const bk1s=hasB1?toMin(b1s):-1, bk1e=hasB1?toMin(b1e):-1;
+  const bk2s=hasB2?toMin(b2s):-1, bk2e=hasB2?toMin(b2e):-1;
+  const slots=[];
+  let cur=sm;
+  while(cur<em){
+    const nxt=cur+10;
+    const inB1=hasB1&&(cur<bk1e&&nxt>bk1s);
+    const inB2=hasB2&&(cur<bk2e&&nxt>bk2s);
+    if(inB1){
+      if(!slots.length||!slots[slots.length-1].isBreak||slots[slots.length-1].breakLabel!==b1l)
+        slots.push({label:`${fmtAmPm(fromMin(bk1s))} – ${fmtAmPm(fromMin(bk1e))}`,isBreak:true,breakLabel:b1l});
+      cur=bk1e; continue;
+    }
+    if(inB2){
+      if(!slots.length||!slots[slots.length-1].isBreak||slots[slots.length-1].breakLabel!==b2l)
+        slots.push({label:`${fmtAmPm(fromMin(bk2s))} – ${fmtAmPm(fromMin(bk2e))}`,isBreak:true,breakLabel:b2l});
+      cur=bk2e; continue;
+    }
+    slots.push({label:`${fmtAmPm(fromMin(cur))} – ${fmtAmPm(fromMin(nxt))}`,isBreak:false,slotMin:cur});
+    cur=nxt;
+  }
+  return slots;
+}
+
+// ═══════════════════════════════════════════
+// ADMIN SCHEDULE GENERATION
+// ═══════════════════════════════════════════
+function generateSchedule(){
+  if(!records.length){toast('Upload student data first','error');return;}
+  detectSiblings();
+  const startT=document.getElementById('adminStart').value||'08:10';
+  const endT=document.getElementById('adminEnd').value||'14:00';
+  const startMin=toMin(startT),endMin=toMin(endT);
+  const N=Math.floor((endMin-startMin)/10);
+  const slotLabel=i=>`${fmtAmPm(fromMin(startMin+i*10))} – ${fmtAmPm(fromMin(startMin+i*10+10))}`;
+
+  const classUsage={},studentCK={},classMap={};
+  records.forEach(r=>{
+    const ck=`${r.grade}|||${r.section}`;
+    if(!classMap[ck])classMap[ck]=[];
+    classMap[ck].push(r);
+    studentCK[r._id]=ck;
+    if(!classUsage[ck])classUsage[ck]=new Map();
+  });
+  Object.values(classMap).forEach(lst=>lst.sort((a,b)=>String(a.roll_no).localeCompare(String(b.roll_no),undefined,{numeric:true})));
+
+  const sibGroupSlots={};
+  const scheduledIds=new Set();
+
+  // STEP 0 — Lock in students with a Special Appointment FIRST.
+  // Their custom time is preserved exactly as set; they are marked as
+  // already-scheduled so the normal slot-picking loop skips them entirely.
+  records.forEach(r=>{
+    if(r.special_appt&&r.special_appt.time){
+      r.timing=r.special_appt.time;
+      r.status='Scheduled';
+      scheduledIds.add(r._id);
+      // If this slot happens to match one of the normal grid slots, mark it
+      // used in that class so others don't get assigned the same label.
+      const ck=studentCK[r._id];
+      const idx=[...Array(N).keys()].find(i=>slotLabel(i)===r.special_appt.time);
+      if(idx!==undefined && ck){
+        const c=classUsage[ck].get(idx)||0;
+        classUsage[ck].set(idx,c+1);
+      }
+    }
+  });
+
+  function pickSlot(ck,sibGid){
+    const used=classUsage[ck];
+    const ordered=[...Array(N).keys()].sort((a,b)=>(used.get(a)||0)-(used.get(b)||0));
+    if(sibGid&&sibGroupSlots[sibGid]&&sibGroupSlots[sibGid].length){
+      const ss=sibGroupSlots[sibGid];
+      for(const idx of ordered){const gaps=ss.map(s=>Math.abs(idx-s));if(gaps.every(g=>g>=2&&g<=3))return idx;}
+      for(const idx of ordered){const gaps=ss.map(s=>Math.abs(idx-s));if(gaps.every(g=>g>=2))return idx;}
+      for(const idx of ordered){const gaps=ss.map(s=>Math.abs(idx-s));if(gaps.every(g=>g>=1))return idx;}
+    }
+    return ordered[0];
+  }
+  function assign(s,idx){
+    const ck=studentCK[s._id];
+    s.timing=slotLabel(idx); s.slot_idx=idx; s.status='Scheduled';
+    const c=classUsage[ck].get(idx)||0; classUsage[ck].set(idx,c+1);
+    if(s.sibling_group){if(!sibGroupSlots[s.sibling_group])sibGroupSlots[s.sibling_group]=[];if(!sibGroupSlots[s.sibling_group].includes(idx))sibGroupSlots[s.sibling_group].push(idx);}
+    scheduledIds.add(s._id);
+  }
+
+  siblingGroups.forEach(g=>{
+    const sorted=[...g.members].sort((a,b)=>(classMap[studentCK[a._id]]||[]).length-(classMap[studentCK[b._id]]||[]).length);
+    sorted.forEach(s=>{if(!scheduledIds.has(s._id))assign(s,pickSlot(studentCK[s._id],s.sibling_group));});
+  });
+  Object.entries(classMap).forEach(([ck,students])=>{
+    students.forEach(s=>{if(!scheduledIds.has(s._id))assign(s,pickSlot(ck,null));});
+  });
+
+  renderAdminTable(); updateMetrics(); renderSiblingPreview();
+  persistRecords(); // save scheduled timings
+  if(!document.getElementById('classLinksPanel').classList.contains('hidden')) renderClassLinksList();
+  const sch=records.filter(r=>r.timing).length;
+  const specialCount=records.filter(r=>r.special_appt&&r.special_appt.time).length;
+  const specialNote=specialCount>0?` · ⭐ ${specialCount} special appointment(s) preserved`:'';
+  document.getElementById('scheduleStatus').textContent=`✓ ${sch} students scheduled across ${Object.keys(classMap).length} classes. No duplicates within class · Sibling gaps ≥20 min ✓${specialNote}`;
+  toast('Schedule generated! Sibling timings now visible in the Sibling Groups panel.','success');
+}
+
+// ═══════════════════════════════════════════
+// TEACHER SCHEDULE GENERATION
+// ═══════════════════════════════════════════
+function toggleBreak(n){
+  const cb=document.getElementById(`useBrk${n}`);
+  const f=document.getElementById(`brk${n}Fields`);
+  cb.checked?f.classList.remove('opacity-40','pointer-events-none'):f.classList.add('opacity-40','pointer-events-none');
+}
+function toggleDay(n){
+  const cb=document.getElementById(`useDay${n}`);
+  const f=document.getElementById(`day${n}Fields`);
+  cb.checked?f.classList.remove('opacity-40','pointer-events-none'):f.classList.add('opacity-40','pointer-events-none');
+  if(n===2 && cb.checked){
+    // Auto-fill Day 2 with the remainder of the class, as a helpful starting point
+    const total=getClassSize();
+    const d1=parseInt(document.getElementById('tDay1Count').value)||0;
+    const remainder=Math.max(0,total-d1);
+    const d2=document.getElementById('tDay2Count');
+    if(!d2.value) d2.value=remainder;
+  }
+  updateDayCountStatus();
+}
+function populateTGrade(){
+  const sel=document.getElementById('tGrade');
+  const prev=sel.value;
+  const grades=[...new Set(records.map(r=>r.grade))].sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
+  sel.innerHTML='<option value="">Select grade</option>'+grades.map(g=>`<option value="${g}"${g===prev?' selected':''}>${g}</option>`).join('');
+  refreshTSection();
+}
+document.getElementById('tGrade').addEventListener('change',refreshTSection);
+function refreshTSection(){
+  const g=document.getElementById('tGrade').value;
+  const sel=document.getElementById('tSection');
+  const secs=[...new Set(records.filter(r=>!g||r.grade===g).map(r=>r.section))].sort();
+  sel.innerHTML='<option value="">Select section</option>'+secs.map(s=>`<option value="${s}">${s}</option>`).join('');
+  updateDayCountStatus();
+}
+document.getElementById('tSection').addEventListener('change',()=>{
+  // When section changes, auto-fill Day 1 with the full class size as a starting point
+  const total=getClassSize();
+  if(total>0){
+    const d1=document.getElementById('tDay1Count');
+    if(!d1.value) d1.value=total;
+  }
+  updateDayCountStatus();
+});
+
+function getClassSize(){
+  const grade=document.getElementById('tGrade').value;
+  const section=document.getElementById('tSection').value;
+  if(!grade||!section) return 0;
+  return records.filter(r=>r.grade===grade&&r.section===section&&r.timing).length;
+}
+
+// Live feedback: shows total class size vs. the sum of Day 1 + Day 2 counts,
+// so the teacher knows immediately if their split doesn't add up.
+function updateDayCountStatus(){
+  const box=document.getElementById('dayCountStatus');
+  const total=getClassSize();
+  const grade=document.getElementById('tGrade').value;
+  const section=document.getElementById('tSection').value;
+
+  if(!grade||!section){
+    box.className='text-xs rounded-lg px-3 py-2 mb-5 bg-[#f0f5ff] text-[#1a4fa0] border border-[#1a4fa0]/20';
+    box.textContent='Select a grade and section above to see the total student count.';
+    return;
+  }
+
+  const day1On=document.getElementById('useDay1').checked;
+  const day2On=document.getElementById('useDay2').checked;
+  const d1=day1On?(parseInt(document.getElementById('tDay1Count').value)||0):0;
+  const d2=day2On?(parseInt(document.getElementById('tDay2Count').value)||0):0;
+  const sum=d1+d2;
+
+  if(sum===total){
+    box.className='text-xs rounded-lg px-3 py-2 mb-5 bg-green-50 text-green-700 border border-green-200';
+    box.textContent=`✓ ${total} students in Grade ${grade} ${section} — Day 1: ${d1}, Day 2: ${d2}. Matches perfectly.`;
+  } else if(sum<total){
+    box.className='text-xs rounded-lg px-3 py-2 mb-5 bg-amber-50 text-amber-700 border border-amber-200';
+    box.textContent=`⚠️ ${total} students total, but Day 1 (${d1}) + Day 2 (${d2}) = ${sum}. ${total-sum} student(s) won't be scheduled — increase a count.`;
+  } else {
+    box.className='text-xs rounded-lg px-3 py-2 mb-5 bg-red-50 text-red-700 border border-red-200';
+    box.textContent=`⚠️ ${total} students total, but Day 1 (${d1}) + Day 2 (${d2}) = ${sum}. That's ${sum-total} too many — reduce a count.`;
+  }
+}
+// Reads the current break checkboxes + times from the UI.
+// Returns null for a break's start/end if it's disabled, so buildDaySlots
+// skips it entirely instead of inserting a phantom break row.
+function getBreakConfig(){
+  const brk1On=document.getElementById('useBrk1').checked;
+  const brk2On=document.getElementById('useBrk2').checked;
+  return {
+    b1s: brk1On ? (document.getElementById('brk1Start').value||'10:10') : null,
+    b1e: brk1On ? (document.getElementById('brk1End').value||'10:30') : null,
+    b1l: document.getElementById('brk1Label').value||'Snack Break',
+    b2s: brk2On ? (document.getElementById('brk2Start').value||'12:30') : null,
+    b2e: brk2On ? (document.getElementById('brk2End').value||'13:00') : null,
+    b2l: document.getElementById('brk2Label').value||'Lunch Break',
+    brk1On, brk2On
+  };
+}
+
+function generateTeacherSchedule(){
+  const grade=document.getElementById('tGrade').value;
+  const section=document.getElementById('tSection').value;
+  const ct=document.getElementById('tCT').value.trim();
+  const act=document.getElementById('tACT').value.trim();
+  if(!grade||!section){toast('Select grade and section first','error');return;}
+  const classStudents=records.filter(r=>r.grade===grade&&r.section===section&&r.timing);
+  if(!classStudents.length){toast('No scheduled students. Ask Admin to generate the schedule first.','error');return;}
+  const {b1s,b1e,b1l,b2s,b2e,b2l,brk1On,brk2On}=getBreakConfig();
+  const sorted=[...classStudents].sort((a,b)=>(a.slot_idx||0)-(b.slot_idx||0));
+  const days=[];
+  if(document.getElementById('useDay1').checked)days.push({
+    label:'Day 1',
+    date:document.getElementById('tDay1Date').value,
+    start:document.getElementById('tDay1Start').value||'08:10',
+    end:document.getElementById('tDay1End').value||'14:00',
+    count:parseInt(document.getElementById('tDay1Count').value)||0
+  });
+  if(document.getElementById('useDay2').checked)days.push({
+    label:'Day 2',
+    date:document.getElementById('tDay2Date').value,
+    start:document.getElementById('tDay2Start').value||'08:10',
+    end:document.getElementById('tDay2End').value||'14:00',
+    count:parseInt(document.getElementById('tDay2Count').value)||0
+  });
+  if(!days.length){toast('Enable at least one day','error');return;}
+
+  // Validate the manual counts add up to the actual class size before proceeding
+  const totalCount=days.reduce((sum,d)=>sum+d.count,0);
+  if(totalCount!==sorted.length){
+    toast(`Student counts don't match: Day total = ${totalCount}, but class has ${sorted.length} students. Fix the counts above before generating.`,'error');
+    return;
+  }
+  if(days.some(d=>d.count<=0)){
+    toast('Enter a student count greater than 0 for each enabled day.','error');
+    return;
+  }
+
+  teacherRows=[];
+  let cursor=0; // tracks position in `sorted` as we consume each day's count
+  days.forEach((day,di)=>{
+    const dayStudents=sorted.slice(cursor,cursor+day.count);
+    cursor+=day.count;
+    if(!dayStudents.length)return;
+    const daySlots=buildDaySlots(day.start,day.end,b1s,b1e,b1l,b2s,b2e,b2l);
+    const nonBreakSlots=daySlots.filter(s=>!s.isBreak);
+
+    // STEP 1 — reserve slots already taken by siblings AND special-appointment
+    // students in THIS class+day, so no one else gets assigned the same label.
+    const reservedLabels=new Set();
+    dayStudents.forEach(st=>{
+      const isLocked=st.is_sibling||(st.special_appt&&st.special_appt.time);
+      if(isLocked){
+        st.teacher_timing=st.timing; // admin baseline / special time (locked, not reassigned)
+        st.teacher_date=fmtDateLong(day.date);
+        st.teacher_day=day.label;
+        reservedLabels.add(st.timing);
+      }
+    });
+
+    // STEP 2 — assign everyone else sequential slots, SKIPPING any slot
+    // whose label is already reserved by a sibling or special appointment.
+    let si=0;
+    dayStudents.forEach(st=>{
+      const isLocked=st.is_sibling||(st.special_appt&&st.special_appt.time);
+      if(!isLocked){
+        while(si<nonBreakSlots.length && reservedLabels.has(nonBreakSlots[si].label)){
+          si++; // skip slots already taken by a sibling or special appointment
+        }
+        if(si<nonBreakSlots.length){
+          st.teacher_timing=nonBreakSlots[si].label;
+          st.teacher_date=fmtDateLong(day.date);
+          st.teacher_day=day.label;
+          si++;
+        }
+      }
+    });
+    // Now build the teacherRows with breaks inserted in correct positions
+    // We need to interleave break rows with student rows
+    let studentIdx=0;
+    daySlots.forEach(slot=>{
+      if(slot.isBreak){
+        teacherRows.push({isBreak:true,breakLabel:slot.breakLabel,timing:slot.label,day:day.label,date:day.date});
+      } else {
+        const st=dayStudents[studentIdx];
+        if(st){
+          const isSpecial=!!(st.special_appt&&st.special_appt.time);
+          // Display time: siblings & special appointments use their locked timing, others use teacher slot
+          const displayTime=(st.is_sibling||isSpecial)?st.timing:slot.label;
+          teacherRows.push({
+            isBreak:false,
+            student_name:st.student_name,
+            timing:displayTime,          // what shows in teacher view
+            adminTiming:st.timing,       // admin baseline (for reference)
+            teacherSlot:slot.label,      // the slot from teacher day config
+            isSibling:st.is_sibling,
+            isSpecial:isSpecial,
+            specialReason:isSpecial?st.special_appt.reason:'',
+            siblingGroup:st.sibling_group,
+            parent_mobile:st.parent_mobile,
+            day:day.label,
+            date:day.date
+          });
+          studentIdx++;
+        }
+      }
+    });
+  });
+  // Write teacher timings back to records so admin can see them
+  sorted.forEach(st=>{
+    const rec=records.find(r=>r._id===st._id);
+    if(rec&&st.teacher_timing){
+      rec.teacher_timing=st.teacher_timing;
+      rec.teacher_date=st.teacher_date||'';
+      rec.teacher_day=st.teacher_day||'';
+    }
+  });
+  // Refresh admin table to show teacher timings
+  persistRecords();
+  renderAdminTable();
+  renderTeacherTable(grade,section,ct,act,days);
+  checkSiblingDayClashes(sorted,days);
+  document.getElementById('teacherOutput').classList.remove('hidden');
+  document.getElementById('teacherOutput').scrollIntoView({behavior:'smooth'});
+}
+
+// Checks whether any sibling in this class has been scheduled on a different
+// PTM date than their sibling (who may be in another class/grade, scheduled
+// by a different teacher). Shows a clear warning banner if so, since this
+// breaks the guarantee that a parent can attend both siblings' PTMs.
+// Also flags siblings whose Admin-locked time falls outside the teacher's
+// chosen start/end window for that day (so it wouldn't actually exist on
+// the printed schedule).
+function checkSiblingDayClashes(classStudents,days){
+  const banner=document.getElementById('siblingClashBanner');
+  const clashes=[];
+  const outOfWindow=[];
+
+  classStudents.forEach(st=>{
+    if(!st.is_sibling || !st.sibling_group) return;
+
+    // Check: does the sibling's locked admin time actually fall within
+    // the teacher's chosen day window?
+    const myDay=days.find(d=>d.label===st.teacher_day);
+    if(myDay && st.timing){
+      const bc=getBreakConfig();
+      const slotsForDay=buildDaySlots(myDay.start,myDay.end,
+        bc.b1s,bc.b1e,bc.b1l,bc.b2s,bc.b2e,bc.b2l
+      ).filter(s=>!s.isBreak);
+      const exists=slotsForDay.some(s=>s.label===st.timing);
+      if(!exists){
+        outOfWindow.push({name:st.student_name,time:st.timing,group:st.sibling_group,day:st.teacher_day});
+      }
+    }
+
+    const group=siblingGroups.find(g=>g.id===st.sibling_group);
+    if(!group) return;
+
+    group.members.forEach(other=>{
+      if(other._id===st._id) return;
+      // Only compare if the OTHER sibling has also been given a teacher_date
+      // (i.e. their own teacher has already generated their class schedule)
+      if(!other.teacher_date) return;
+      if(!st.teacher_date) return;
+      if(other.teacher_date!==st.teacher_date){
+        // Avoid duplicate pairs (A-B and B-A)
+        const key=[st.student_name,other.student_name].sort().join('|')+st.sibling_group;
+        if(!clashes.some(c=>c.key===key)){
+          clashes.push({
+            key,
+            a:st.student_name, aDate:st.teacher_date, aClass:`${st.grade} ${st.section}`,
+            b:other.student_name, bDate:other.teacher_date, bClass:`${other.grade} ${other.section}`,
+            group:st.sibling_group
+          });
+        }
+      }
+    });
+  });
+
+  if(clashes.length || outOfWindow.length){
+    banner.classList.remove('hidden');
+    let html='';
+    if(clashes.length){
+      html+=`<div class="flex items-start gap-2 mb-3">
+        <span class="text-base">⚠️</span>
+        <div>
+          <p class="font-bold mb-1">Sibling date conflict (${clashes.length})</p>
+          <p class="mb-2">These siblings are scheduled on <strong>different PTM dates</strong> — a parent may not be able to attend both. Coordinate with the other teacher or Admin.</p>
+          ${clashes.map(c=>`<div class="bg-white border border-red-200 rounded-lg px-3 py-2 mb-1">
+            🔒 ${c.group}: <strong>${c.a}</strong> (${c.aClass}) → <strong>${c.aDate}</strong>
+            &nbsp;vs&nbsp;
+            <strong>${c.b}</strong> (${c.bClass}) → <strong>${c.bDate}</strong>
+          </div>`).join('')}
+        </div>
+      </div>`;
+    }
+    if(outOfWindow.length){
+      html+=`<div class="flex items-start gap-2">
+        <span class="text-base">⏰</span>
+        <div>
+          <p class="font-bold mb-1">Sibling time outside your day window (${outOfWindow.length})</p>
+          <p class="mb-2">These siblings have an Admin-locked time that doesn't fall within your chosen start/end time for that day. Adjust your day's start/end time, or contact Admin to re-check the baseline schedule.</p>
+          ${outOfWindow.map(o=>`<div class="bg-white border border-amber-200 rounded-lg px-3 py-2 mb-1">
+            🔒 ${o.group}: <strong>${o.name}</strong> locked at <strong>${o.time}</strong> (${o.day})
+          </div>`).join('')}
+        </div>
+      </div>`;
+    }
+    banner.innerHTML=html;
+  } else {
+    banner.classList.add('hidden');
+    banner.innerHTML='';
+  }
+}
+function renderTeacherTable(grade,section,ct,act,days){
+  document.getElementById('tScheduleTitle').textContent=`Grade: ${grade}  Sec: ${section}`;
+  document.getElementById('tScheduleSubtitle').textContent=`CT: ${ct||'—'}  ·  ACT: ${act||'—'}  ·  ${termLabel()}`;
+  const body=document.getElementById('tScheduleBody');
+  let sl=1,html='',lastDay='';
+  teacherRows.forEach(row=>{
+    if(row.day!==lastDay){
+      lastDay=row.day;
+      const dtLabel=fmtDateLong(row.date);
+      html+=`<tr class="bg-[#e8f4ff]"><td colspan="5" class="px-3 py-2 font-bold nafl-blue text-xs">${row.day}${dtLabel?' — '+dtLabel:''}</td></tr>`;
+    }
+    if(row.isBreak){
+      html+=`<tr class="break-row"><td class="px-3 py-2 text-center text-amber-700">—</td><td class="px-3 py-2 text-amber-700">${row.timing}</td><td colspan="3" class="px-3 py-2 text-amber-700">☕ ${row.breakLabel}</td></tr>`;
+    } else {
+      const isLocked=row.isSibling||row.isSpecial;
+      const b=isLocked?'font-weight:bold':'';
+      const displayTime=isLocked?row.adminTiming:row.timing;
+      let tag='—';
+      if(row.isSibling) tag=`<span class="bg-amber-100 text-amber-700 rounded px-1 py-0.5 text-[10px] font-bold">🔒${row.siblingGroup}</span>`;
+      else if(row.isSpecial) tag=`<span class="bg-purple-100 text-purple-700 rounded px-1 py-0.5 text-[10px] font-bold" title="${row.specialReason||''}">⭐ Special</span>`;
+      html+=`<tr class="border-t border-[#edf3f2] hover:bg-[#f5fafd]${isLocked?' sibling-row':''}">
+        <td class="px-3 py-2.5" style="${b}">${sl++}</td>
+        <td class="px-3 py-2.5" style="${b}">${displayTime}</td>
+        <td class="px-3 py-2.5 font-semibold" style="${b}">${row.student_name}</td>
+        <td class="px-3 py-2.5">${tag}</td>
+        <td class="px-3 py-2.5 text-[#5d747a]">${row.parent_mobile||'—'}</td>
+      </tr>`;
+    }
+  });
+  body.innerHTML=html||'<tr><td colspan="5" class="px-3 py-6 text-center text-[#5d747a]">No data</td></tr>';
+}
+
+// ═══════════════════════════════════════════
+// TEACHER EXPORT — Times New Roman, school header, sibling BOLD
+// ═══════════════════════════════════════════
+function getMeta(){
+  return{grade:document.getElementById('tGrade').value,section:document.getElementById('tSection').value,
+    ct:document.getElementById('tCT').value.trim(),act:document.getElementById('tACT').value.trim(),
+    d1:document.getElementById('useDay1').checked?document.getElementById('tDay1Date').value:'',
+    d2:document.getElementById('useDay2').checked?document.getElementById('tDay2Date').value:''};
+}
+function getDays(){
+  const d=[];
+  if(document.getElementById('useDay1').checked)d.push({label:'Day 1',date:document.getElementById('tDay1Date').value});
+  if(document.getElementById('useDay2').checked)d.push({label:'Day 2',date:document.getElementById('tDay2Date').value});
+  return d;
+}
+function teacherExport(type,template){
+  if(!teacherRows.length){toast('Generate schedule first','error');return;}
+  const m=getMeta();
+  const tmpl=template||'cir';
+  if(type==='word')exportTWord(m,tmpl);
+  else if(type==='pdf')exportTPDF(m,tmpl);
+  else if(type==='xlsx')exportTXLSX(m);
+}
+
+// ── Download log with timestamp (local UI + shared backend) ───────
+function logDownload(label){
+  const log=document.getElementById('downloadLog');
+  const now=new Date();
+  const ts=now.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})+
+    ' '+now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});
+  const m=getMeta();
+  if(log){
+    const entry=document.createElement('div');
+    entry.className='flex justify-between gap-2 border-b border-[#edf3f2] pb-1';
+    entry.innerHTML=`<span>⬇ <b>${label}</b> — Grade ${m.grade} ${m.section} · CT: ${m.ct||'—'}</span><span class="text-[#9aa5b4] whitespace-nowrap">${ts}</span>`;
+    const placeholder=log.querySelector('.italic');
+    if(placeholder)placeholder.remove();
+    log.insertBefore(entry,log.firstChild); // newest first
+  }
+  // Also record in the shared Google Sheet so Admin can see all teacher downloads
+  logDownloadRemote({grade:m.grade,section:m.section,ct:m.ct,action:label});
+}
+
+// ── Circular school header (matches NAFL PDF exactly) ────────────
+function naflHdr(m,dateStr){
+  return`<div style="text-align:center;font-family:'Times New Roman',Times,serif;margin-bottom:6px">
+    <div style="font-size:14pt;font-weight:bold">${SETTINGS.schoolName}</div>
+    <div style="font-size:10pt;font-weight:normal">${SETTINGS.schoolCity}</div>
+    <div style="font-size:12pt;font-weight:bold">${termHeader()}</div>
+  </div>
+  <div style="font-family:'Times New Roman',Times,serif;font-size:12pt;color:#1a4fa0;font-weight:bold;margin:10px 0 6px 0">
+    Grade: ${m.grade}&nbsp;&nbsp;Sec: ${m.section}
+    &nbsp;&nbsp;&nbsp;&nbsp;Class Teacher: ${m.ct||'—'}${m.act?' &nbsp;&nbsp;&nbsp;&nbsp;Associate CT: '+m.act:''}
+    &nbsp;&nbsp;&nbsp;&nbsp;${dateStr||''}
+  </div>`;
+}
+
+// ── WORD export ───────────────────────────────────────────────────
+function exportTWord(m,tmpl){
+  const isAtt=tmpl==='att';
+  const days=getDays();
+  let body='';
+
+  const baseTblStyle='width:100%;border-collapse:collapse;font-family:"Times New Roman",Times,serif;font-size:12pt';
+  const cellStyle='border:1px solid #000;padding:5pt 7pt;font-family:"Times New Roman",Times,serif;font-size:12pt';
+
+  days.forEach(day=>{
+    const dr=teacherRows.filter(r=>r.day===day.label);
+    if(!dr.length)return;
+    body+=naflHdr(m,fmtDateLong(day.date));
+
+    if(isAtt){
+      // Attendance Sheet — Circular + Parent Signature column
+      body+=`<table border="1" cellpadding="5" cellspacing="0" style="${baseTblStyle}">
+        <tr style="background:#fce8d5">
+          <th style="${cellStyle};width:35pt;text-align:center">Sl.<br>No.</th>
+          <th style="${cellStyle};width:140pt;text-align:center">TIME SLOT</th>
+          <th style="${cellStyle};text-align:center">STUDENT NAME</th>
+          <th style="${cellStyle};width:130pt;text-align:center">PARENT'S SIGNATURE</th>
+        </tr>`;
+      let sl=1;
+      dr.forEach(row=>{
+        if(row.isBreak){
+          body+=`<tr><td colspan="4" style="${cellStyle};text-align:center;font-style:italic;font-weight:bold;background:#fef3e2">${row.timing}&nbsp;&nbsp;&nbsp;&nbsp;BREAK TIME</td></tr>`;
+        } else {
+          const b=(row.isSibling||row.isSpecial)?'font-weight:bold;':'';
+          const t=(row.isSibling||row.isSpecial)?row.adminTiming:row.timing;
+          body+=`<tr>
+            <td style="${cellStyle};text-align:center;${b}">${sl++}</td>
+            <td style="${cellStyle};text-align:center;${b}">${t}</td>
+            <td style="${cellStyle};${b}">${row.student_name}</td>
+            <td style="${cellStyle}">&nbsp;</td>
+          </tr>`;
+        }
+      });
+      body+='</table>';
+    } else {
+      // Circular — no signature column, exactly like NAFL PDF
+      body+=`<table border="1" cellpadding="5" cellspacing="0" style="${baseTblStyle}">
+        <tr style="background:#fce8d5">
+          <th style="${cellStyle};width:35pt;text-align:center">Sl.<br>No.</th>
+          <th style="${cellStyle};width:140pt;text-align:center">TIME SLOT</th>
+          <th style="${cellStyle};text-align:center">STUDENT NAME</th>
+        </tr>`;
+      let sl=1;
+      dr.forEach(row=>{
+        if(row.isBreak){
+          body+=`<tr><td colspan="3" style="${cellStyle};text-align:center;font-style:italic;font-weight:bold;background:#fef3e2">${row.timing}&nbsp;&nbsp;&nbsp;&nbsp;BREAK TIME</td></tr>`;
+        } else {
+          const b=(row.isSibling||row.isSpecial)?'font-weight:bold;':'';
+          const t=(row.isSibling||row.isSpecial)?row.adminTiming:row.timing;
+          body+=`<tr>
+            <td style="${cellStyle};text-align:center;${b}">${sl++}</td>
+            <td style="${cellStyle};text-align:center;${b}">${t}</td>
+            <td style="${cellStyle};${b}">${row.student_name}</td>
+          </tr>`;
+        }
+      });
+      body+='</table>';
+    }
+    body+='<br style="page-break-after:always">';
+  });
+
+  const label=isAtt?'Schedule + Signature':'PTM Circular';
+  const suffix=isAtt?'_WithSignature':'_Circular';
+  const docHtml=`<html><head><meta charset="UTF-8">
+    <style>
+      @page{margin:2cm}
+      body{font-family:"Times New Roman",Times,serif;font-size:12pt;margin:0}
+      table{border-collapse:collapse;width:100%}
+    </style>
+  </head><body>${body}</body></html>`;
+  downloadBlob(new Blob([docHtml],{type:'application/msword'}),`NAFL_PTM_Grade${m.grade}${m.section}${suffix}.doc`);
+  logDownload(`Word · ${label}`);
+  toast(`Word ${label} downloaded`,'success');
+}
+
+// ── PDF export ────────────────────────────────────────────────────
+function exportTPDF(m,tmpl){
+  const isAtt=tmpl==='att';
+  const{jsPDF}=window.jspdf;
+  const days=getDays();
+  const doc=new jsPDF('p','pt','a4');
+  const pw=doc.internal.pageSize.getWidth();
+  let y=0;
+  let firstPage=true;
+
+  function addHeader(day){
+    y=40;
+    // School name — bold, black, centered
+    doc.setFont('times','bold');
+    doc.setFontSize(14);
+    doc.setTextColor(0,0,0);
+    doc.text(SETTINGS.schoolName,pw/2,y,{align:'center'});y+=18;
+    // City — normal, smaller
+    doc.setFont('times','normal');
+    doc.setFontSize(10);
+    doc.text(SETTINGS.schoolCity,pw/2,y,{align:'center'});y+=14;
+    // Term header — bold
+    doc.setFont('times','bold');
+    doc.setFontSize(12);
+    doc.text(termHeader(),pw/2,y,{align:'center'});y+=22;
+    // Grade line — blue bold
+    doc.setFont('times','bold');
+    doc.setFontSize(12);
+    doc.setTextColor(26,79,160);
+    const left=`Grade: ${m.grade}   Sec: ${m.section}`;
+    const mid=`Class Teacher: ${m.ct||'—'}${m.act?'   Associate CT: '+m.act:''}`;
+    const right=fmtDateLong(day.date)||'';
+    // Put all on one line if fits, else two lines
+    const fullLine=`${left}     ${mid}     ${right}`;
+    const margin=38;
+    if(doc.getTextWidth(fullLine)<pw-margin*2){
+      doc.text(fullLine,margin,y);y+=18;
+    } else {
+      doc.text(`${left}     ${mid}`,margin,y);y+=15;
+      doc.text(right,margin,y);y+=16;
+    }
+    doc.setTextColor(0,0,0);
+  }
+
+  days.forEach((day,di)=>{
+    if(!firstPage){doc.addPage();}
+    firstPage=false;
+    addHeader(day);
+    const dr=teacherRows.filter(r=>r.day===day.label);
+    if(!dr.length)return;
+    const bdy=[];
+    let sl=1;
+
+    if(isAtt){
+      // Attendance Sheet — circular layout + Parent Signature column
+      dr.forEach(row=>{
+        if(row.isBreak){
+          bdy.push([{content:`${row.timing}     BREAK TIME`,colSpan:4,
+            styles:{fillColor:[254,243,226],fontStyle:'bolditalic',halign:'center',font:'times',fontSize:11}}]);
+        } else {
+          const t=(row.isSibling||row.isSpecial)?row.adminTiming:row.timing;
+          const fs=(row.isSibling||row.isSpecial)?'bold':'normal';
+          bdy.push([
+            {content:String(sl++),styles:{halign:'center',font:'times',fontSize:11,fontStyle:fs}},
+            {content:t,styles:{halign:'center',font:'times',fontSize:11,fontStyle:fs}},
+            {content:row.student_name,styles:{font:'times',fontSize:11,fontStyle:fs}},
+            {content:'',styles:{font:'times',fontSize:11}}
+          ]);
+        }
+      });
+      doc.autoTable({
+        startY:y,
+        head:[[
+          {content:'Sl.\nNo.',styles:{halign:'center'}},
+          {content:'TIME SLOT',styles:{halign:'center'}},
+          {content:'STUDENT NAME',styles:{halign:'center'}},
+          {content:"PARENT'S SIGNATURE",styles:{halign:'center'}}
+        ]],
+        body:bdy,
+        headStyles:{fillColor:[252,232,213],textColor:[0,0,0],fontStyle:'bold',font:'times',fontSize:11,minCellHeight:26},
+        bodyStyles:{font:'times',fontSize:11,minCellHeight:22},
+        columnStyles:{
+          0:{cellWidth:35,halign:'center'},
+          1:{cellWidth:130,halign:'center'},
+          3:{cellWidth:130}
+        },
+        margin:{left:35,right:35},
+        theme:'grid'
+      });
+    } else {
+      // Circular — exactly matches NAFL format: Sl No, Time Slot, Student Name only
+      dr.forEach(row=>{
+        if(row.isBreak){
+          bdy.push([{content:`${row.timing}     BREAK TIME`,colSpan:3,
+            styles:{fillColor:[254,243,226],fontStyle:'bolditalic',halign:'center',font:'times',fontSize:11}}]);
+        } else {
+          const t=(row.isSibling||row.isSpecial)?row.adminTiming:row.timing;
+          const fs=(row.isSibling||row.isSpecial)?'bold':'normal';
+          bdy.push([
+            {content:String(sl++),styles:{halign:'center',font:'times',fontSize:11,fontStyle:fs}},
+            {content:t,styles:{halign:'center',font:'times',fontSize:11,fontStyle:fs}},
+            {content:row.student_name,styles:{font:'times',fontSize:11,fontStyle:fs}}
+          ]);
+        }
+      });
+      doc.autoTable({
+        startY:y,
+        head:[[
+          {content:'Sl.\nNo.',styles:{halign:'center'}},
+          {content:'TIME SLOT',styles:{halign:'center'}},
+          {content:'STUDENT NAME',styles:{halign:'center'}}
+        ]],
+        body:bdy,
+        headStyles:{fillColor:[252,232,213],textColor:[0,0,0],fontStyle:'bold',font:'times',fontSize:11,minCellHeight:26},
+        bodyStyles:{font:'times',fontSize:11,minCellHeight:20},
+        columnStyles:{
+          0:{cellWidth:35,halign:'center'},
+          1:{cellWidth:145,halign:'center'}
+        },
+        margin:{left:35,right:35},
+        theme:'grid'
+      });
+    }
+  });
+
+  const label=isAtt?'Schedule + Signature':'PTM Circular';
+  const suffix=isAtt?'_WithSignature':'_Circular';
+  doc.save(`NAFL_PTM_Grade${m.grade}${m.section}${suffix}.pdf`);
+  logDownload(`PDF · ${label}`);
+  toast(`PDF ${label} downloaded`,'success');
+}
+
+// ── Excel (both sheets in one file) ───────────────────────────────
+function exportTXLSX(m){
+  const wb=XLSX.utils.book_new();
+  getDays().forEach(day=>{
+    const dr=teacherRows.filter(r=>r.day===day.label);if(!dr.length)return;
+    const dateStr=fmtDateLong(day.date)||day.date||'';
+
+    // Sheet A: Circular
+    const sheetA=[[SETTINGS.schoolName],[SETTINGS.schoolCity],[termHeader()],[],
+      [`Grade: ${m.grade}  Sec: ${m.section}`,`Class Teacher: ${m.ct||'—'}`,`ACT: ${m.act||'—'}`,dateStr],
+      [],['Sl. No.','TIME SLOT','STUDENT NAME']];
+    let slA=1;
+    dr.forEach(row=>{
+      if(row.isBreak)sheetA.push(['',row.timing,'BREAK TIME']);
+      else{
+        const t=(row.isSibling||row.isSpecial)?row.adminTiming:row.timing;
+        sheetA.push([slA++,t,row.student_name+((row.isSibling||row.isSpecial)?' *':'')]);
+      }
+    });
+    sheetA.push([],[],['* Bold = sibling (time fixed by Admin)']);
+    const wsA=XLSX.utils.aoa_to_sheet(sheetA);
+    wsA['!cols']=[{wch:8},{wch:24},{wch:36}];
+    XLSX.utils.book_append_sheet(wb,wsA,(day.label+' Circular').slice(0,31));
+
+    // Sheet B: Attendance
+    const sheetB=[[SETTINGS.schoolName],[SETTINGS.schoolCity],[termHeader()],[],
+      [`Grade: ${m.grade}  Sec: ${m.section}`,`Class Teacher: ${m.ct||'—'}`,`ACT: ${m.act||'—'}`,dateStr],
+      [],['Sl. No.','TIME SLOT','STUDENT NAME',"PARENT'S SIGNATURE"]];
+    let slB=1;
+    dr.forEach(row=>{
+      if(row.isBreak)sheetB.push(['',row.timing,'BREAK TIME','','','']);
+      else{
+        const t=(row.isSibling||row.isSpecial)?row.adminTiming:row.timing;
+        sheetB.push([slB++,t,row.student_name+((row.isSibling||row.isSpecial)?' *':''),'']);
+      }
+    });
+    sheetB.push([],[],['* Bold = sibling (time fixed by Admin)']);
+    const wsB=XLSX.utils.aoa_to_sheet(sheetB);
+    wsB['!cols']=[{wch:8},{wch:24},{wch:36},{wch:24}];
+    XLSX.utils.book_append_sheet(wb,wsB,(day.label+' Attendance').slice(0,31));
+  });
+  XLSX.writeFile(wb,`NAFL_PTM_Grade${m.grade}${m.section}_BothSheets.xlsx`);
+  logDownload('Excel · Both sheets (Circular + Attendance)');
+  toast('Excel downloaded — both sheets included','success');
+}
+
+function printTeacherSchedule(tmpl){
+  if(!teacherRows.length){toast('Generate schedule first','error');return;}
+  const isAtt=tmpl==='att';
+  const isCir=tmpl==='cir';
+  const m=getMeta();
+  const days=getDays();
+  let body='';
+
+  days.forEach(day=>{
+    const dr=teacherRows.filter(r=>r.day===day.label);if(!dr.length)return;
+
+    // School header — matches NAFL circular exactly
+    body+=`<div style="text-align:center;margin-bottom:10px">
+      <div style="font-size:14pt;font-weight:bold;color:#000">${SETTINGS.schoolName}</div>
+      <div style="font-size:10pt;color:#000">${SETTINGS.schoolCity}</div>
+      <div style="font-size:12pt;font-weight:bold;color:#000">${termHeader()}</div>
+    </div>
+    <div style="display:table;width:100%;margin-bottom:10px">
+      <div style="display:table-cell;width:32%;color:#1a4fa0;font-weight:bold;font-size:12pt;padding:6px;vertical-align:middle">
+        Grade: ${m.grade} &nbsp; Sec: ${m.section}
+      </div>
+      <div style="display:table-cell;width:36%;text-align:center;color:#1a4fa0;font-weight:bold;font-size:12pt;padding:6px;vertical-align:middle">
+        <div>Class Teacher: ${m.ct||'—'}</div>
+        ${m.act?'<div style="margin-top:3px">ACT: '+m.act+'</div>':''}
+      </div>
+      <div style="display:table-cell;width:32%;text-align:right;color:#1a4fa0;font-weight:bold;font-size:12pt;padding:6px;vertical-align:middle">
+        ${fmtDateLong(day.date)||''}
+      </div>
+    </div>`;
+
+    let sl=1;
+
+    if(isAtt){
+      // Attendance Sheet — same as circular + Parent's Signature
+      body+=`<table>
+        <tr style="background:#fce8d5">
+          <th style="width:40px">Sl.<br>No.</th>
+          <th>TIME SLOT</th>
+          <th>STUDENT NAME</th>
+          <th style="width:140px">PARENT'S<br>SIGNATURE</th>
+        </tr>`;
+      dr.forEach(row=>{
+        if(row.isBreak){
+          body+=`<tr style="background:#fef3e2"><td colspan="4" style="text-align:center;font-weight:bold;font-style:italic">${row.timing}&nbsp;&nbsp;&nbsp;&nbsp;BREAK TIME</td></tr>`;
+        } else {
+          const b=(row.isSibling||row.isSpecial)?'font-weight:bold':'';
+          const t=(row.isSibling||row.isSpecial)?row.adminTiming:row.timing;
+          body+=`<tr>
+            <td style="text-align:center;${b}">${sl++}</td>
+            <td style="text-align:center;${b}">${t}</td>
+            <td style="${b}">${row.student_name}</td>
+            <td>&nbsp;</td>
+          </tr>`;
+        }
+      });
+      body+='</table>';
+    } else {
+      // Circular — exactly like NAFL PDF: Sl No | TIME SLOT | STUDENT NAME (no signature)
+      body+=`<table>
+        <tr style="background:#fce8d5">
+          <th style="width:40px">Sl.<br>No.</th>
+          <th>TIME SLOT</th>
+          <th>STUDENT NAME</th>
+        </tr>`;
+      dr.forEach(row=>{
+        if(row.isBreak){
+          body+=`<tr style="background:#fef3e2"><td colspan="3" style="text-align:center;font-weight:bold;font-style:italic">${row.timing}&nbsp;&nbsp;&nbsp;&nbsp;BREAK TIME</td></tr>`;
+        } else {
+          const b=(row.isSibling||row.isSpecial)?'font-weight:bold':'';
+          const t=(row.isSibling||row.isSpecial)?row.adminTiming:row.timing;
+          body+=`<tr>
+            <td style="text-align:center;${b}">${sl++}</td>
+            <td style="text-align:center;${b}">${t}</td>
+            <td style="${b}">${row.student_name}</td>
+          </tr>`;
+        }
+      });
+      body+='</table>';
+    }
+    body+='<div style="page-break-after:always"></div>';
+  });
+
+  const title=isAtt?'PTM Schedule + Parent Signature':'PTM Circular';
+  const thBg='#fce8d5'; // both templates use peach header
+  const win=window.open('','_blank');
+  win.document.write(`<html><head><title>${title}</title>
+    <style>
+      body{font-family:"Times New Roman",Times,serif;font-size:12pt;padding:20px;margin:0}
+      table{width:100%;border-collapse:collapse;margin-bottom:16px}
+      th,td{border:1px solid #000;padding:5pt 7pt;font-size:12pt}
+      th{background:${thBg};text-align:center}
+      td{height:20pt}
+      @media print{@page{size:A4;margin:1.5cm}body{padding:0}}
+    </style>
+    </head><body>${body}<script>window.print()<\/script></body></html>`);
+  win.document.close();
+  logDownload(`Print · ${title}`);
+}
+
+// ═══════════════════════════════════════════
+// ADMIN EXPORTS
+// ═══════════════════════════════════════════
+function adminExport(type){
+  const data=records.filter(r=>r.timing);
+  if(!data.length){toast('Generate schedule first','error');return;}
+  if(type==='xlsx')adminXLSX(data);
+  else if(type==='xlsx-teams')adminXLSX(data,true);
+  else adminPDF(data);
+}
+function adminExportClasswise(type){
+  const data=records.filter(r=>r.timing);if(!data.length){toast('Generate schedule first','error');return;}
+  const cm={};data.forEach(r=>{const k=`${r.grade} ${r.section}`;if(!cm[k])cm[k]=[];cm[k].push(r);});
+  const keys=Object.keys(cm).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+  if(type==='xlsx')classXLSX(cm,keys);else classPDF(cm,keys);
+}
+
+// ── Shareable Class Links panel (e.g. Grade1A_Timeslot) ───────────
+function toggleClassLinksPanel(){
+  const panel=document.getElementById('classLinksPanel');
+  const wasHidden=panel.classList.contains('hidden');
+  panel.classList.toggle('hidden');
+  if(wasHidden) renderClassLinksList();
+}
+function getAllClassKeys(){
+  const data=records.filter(r=>r.timing);
+  const seen=new Map(); // slug -> {grade, section}
+  data.forEach(r=>{
+    const slug=classKeyToSlug(r.grade,r.section);
+    if(!seen.has(slug)) seen.set(slug,{grade:r.grade,section:r.section});
+  });
+  return [...seen.entries()].sort((a,b)=>a[0].localeCompare(b[0],undefined,{numeric:true}));
+}
+function renderClassLinksList(){
+  const data=records.filter(r=>r.timing);
+  if(!data.length){
+    document.getElementById('classLinksList').innerHTML='<p class="text-[#5d747a]">Generate the schedule first.</p>';
+    return;
+  }
+  const classes=getAllClassKeys();
+  document.getElementById('classLinksList').innerHTML=classes.map(([slug,{grade,section}])=>{
+    const url=buildClassLink(grade,section);
+    return `<div class="flex items-center justify-between gap-2 bg-white border border-green-100 rounded-lg px-3 py-2">
+      <div>
+        <span class="font-bold text-[#1a4fa0]">${slug}_Timeslot</span>
+        <span class="text-[#5d747a] ml-1">— Grade ${grade} Sec ${section}</span>
+      </div>
+      <div class="flex gap-1 shrink-0">
+        <button onclick="navigator.clipboard.writeText('${url}').then(()=>toast('Link copied: ${slug}_Timeslot','success'))" class="text-[10px] bg-[#1a4fa0] text-white rounded px-2 py-1 font-semibold">Copy</button>
+        <a href="${url}" target="_blank" class="text-[10px] border border-[#1a4fa0] text-[#1a4fa0] rounded px-2 py-1 font-semibold">Open</a>
+      </div>
+    </div>`;
+  }).join('');
+}
+function copyAllClassLinks(){
+  const classes=getAllClassKeys();
+  if(!classes.length){toast('Generate schedule first','error');return;}
+  const text=classes.map(([slug,{grade,section}])=>
+    `${slug}_Timeslot: ${buildClassLink(grade,section)}`
+  ).join('\n');
+  navigator.clipboard.writeText(text).then(()=>{
+    toast(`Copied ${classes.length} class links — paste into your circular`,'success');
+  }).catch(()=>{
+    toast('Could not copy automatically — copy each link individually below.','error');
+  });
+}
+
+function adminXLSX(data,forTeams){
+  const wb=XLSX.utils.book_new();
+  const sorted=data.sort((a,b)=>`${a.grade}${a.section}${a.roll_no}`.localeCompare(`${b.grade}${b.section}${b.roll_no}`,undefined,{numeric:true}));
+  const aoa=[[SETTINGS.schoolName],[SETTINGS.schoolCity],[termHeader()],[],
+    ['#','Acadamis ID','Admission No.','Roll No.','Student Name','Grade','Section','Admin Slot','Teacher Timing','PTM Date','Sibling Group','Status']];
+  sorted.forEach((r,i)=>aoa.push([i+1,r.acadamis_id,r.admission_no,r.roll_no,r.student_name,r.grade,r.section,r.timing||'',r.teacher_timing||'',r.teacher_date||'',r.sibling_group||'',r.status]));
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:5},{wch:12},{wch:14},{wch:8},{wch:30},{wch:10},{wch:6},{wch:22},{wch:22},{wch:26},{wch:10},{wch:12}];
+  XLSX.utils.book_append_sheet(wb,ws,'All Students');
+  // Standard .xlsx format (Office Open XML) — this is the SAME file format
+  // used by Microsoft Excel and Microsoft Teams. No special export mode is
+  // needed: just upload/attach this .xlsx file to a Teams channel or
+  // OneDrive/SharePoint, and it opens natively in Excel Online inside Teams.
+  XLSX.writeFile(wb,`NAFL_PTM_WholeSchool_${termLabel().replace(/[^a-zA-Z0-9]/g,'_')}.xlsx`);
+  if(forTeams){
+    toast('✓ Excel downloaded. This .xlsx file opens directly in Microsoft Teams — just attach it to a channel or upload to your Teams\' Files tab / SharePoint.','success');
+  } else {
+    toast('Excel downloaded','success');
+  }
+}
+function adminPDF(data){
+  const{jsPDF}=window.jspdf;
+  const doc=new jsPDF('l','pt','a4');
+  const pw=doc.internal.pageSize.getWidth();
+  let y=36;
+  doc.setFont('times','bold');doc.setFontSize(14);doc.setTextColor(26,79,160);
+  doc.text(SETTINGS.schoolName,pw/2,y,{align:'center'});y+=18;
+  doc.setFont('times','normal');doc.setFontSize(10);doc.setTextColor(0,0,0);
+  doc.text(SETTINGS.schoolCity,pw/2,y,{align:'center'});y+=14;
+  doc.setFont('times','bold');doc.setFontSize(12);
+  doc.text(termHeader(),pw/2,y,{align:'center'});y+=20;
+  const rows=data.sort((a,b)=>`${a.grade}${a.section}${a.roll_no}`.localeCompare(`${b.grade}${b.section}${b.roll_no}`,undefined,{numeric:true}));
+  doc.autoTable({startY:y,
+    head:[['#','Acadamis ID','Adm No.','Roll','Student Name','Grade','Sec','Admin Slot','Teacher Timing','PTM Date','Sibling','Status']],
+    body:rows.map((r,i)=>[i+1,r.acadamis_id,r.admission_no,r.roll_no,r.student_name,r.grade,r.section,r.timing||'',r.teacher_timing||'pending',r.teacher_date||'',r.sibling_group||'',r.status]),
+    headStyles:{fillColor:[26,79,160],textColor:[255,255,255],font:'times',fontSize:8,fontStyle:'bold'},
+    bodyStyles:{font:'times',fontSize:8},
+    didParseCell:d=>{if(d.section==='body'&&d.row.raw&&d.row.raw[8])d.cell.styles.fontStyle='bold';},
+    margin:{left:25,right:25},theme:'grid'});
+  doc.save(`NAFL_PTM_WholeSchool_${termLabel().replace(/[^a-zA-Z0-9]/g,'_')}.pdf`);
+  toast('PDF downloaded','success');
+}
+function classXLSX(cm,keys){
+  const wb=XLSX.utils.book_new();
+  keys.forEach(k=>{
+    const students=cm[k].sort((a,b)=>String(a.roll_no).localeCompare(String(b.roll_no),undefined,{numeric:true}));
+    const aoa=[[SETTINGS.schoolName],[SETTINGS.schoolCity],[termHeader()],[`Grade & Sec: ${k}`],[],
+      ['Sl.No.','Acadamis ID','Adm No.','Roll No.','Student Name','Admin Slot','Teacher Timing','PTM Date','Sibling Group','Parent Mobile']];
+    students.forEach((r,i)=>aoa.push([i+1,r.acadamis_id,r.admission_no,r.roll_no,r.student_name,r.timing||'',r.teacher_timing||'',r.teacher_date||'',r.sibling_group||'',r.parent_mobile||'']));
+    const ws=XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols']=[{wch:6},{wch:12},{wch:12},{wch:8},{wch:28},{wch:22},{wch:22},{wch:26},{wch:10},{wch:14}];
+    XLSX.utils.book_append_sheet(wb,ws,k.replace(/[^a-zA-Z0-9]/g,'_').slice(0,31));
+  });
+  XLSX.writeFile(wb,`NAFL_PTM_Classwise_${termLabel().replace(/[^a-zA-Z0-9]/g,'_')}.xlsx`);
+  toast('Class-wise Excel downloaded','success');
+}
+function classPDF(cm,keys){
+  const{jsPDF}=window.jspdf;
+  const doc=new jsPDF('p','pt','a4');
+  const pw=doc.internal.pageSize.getWidth();
+  keys.forEach((k,ki)=>{
+    if(ki>0)doc.addPage();
+    let y=40;
+    doc.setFont('times','bold');doc.setFontSize(14);doc.setTextColor(26,79,160);
+    doc.text(SETTINGS.schoolName,pw/2,y,{align:'center'});y+=18;
+    doc.setFont('times','normal');doc.setFontSize(10);doc.setTextColor(0,0,0);
+    doc.text(SETTINGS.schoolCity,pw/2,y,{align:'center'});y+=14;
+    doc.setFont('times','bold');doc.setFontSize(12);
+    doc.text(termHeader(),pw/2,y,{align:'center'});y+=20;
+    doc.setTextColor(26,79,160);doc.setFont('times','bold');doc.setFontSize(12);
+    doc.text(`Grade & Section: ${k}`,40,y);y+=18;doc.setTextColor(0,0,0);
+    const students=cm[k].sort((a,b)=>String(a.roll_no).localeCompare(String(b.roll_no),undefined,{numeric:true}));
+    doc.autoTable({startY:y,
+      head:[['#','Acadamis ID','Adm No.','Roll No.','Student Name','Admin Slot','Teacher Timing','PTM Date','Sibling']],
+      body:students.map((r,i)=>[i+1,r.acadamis_id,r.admission_no,r.roll_no,r.student_name,r.timing||'',r.teacher_timing||'',r.teacher_date||'',r.sibling_group||'']),
+      headStyles:{fillColor:[26,79,160],textColor:[255,255,255],font:'times',fontSize:11,fontStyle:'bold'},
+      bodyStyles:{font:'times',fontSize:11},
+      didParseCell:d=>{if(d.section==='body'&&d.row.raw&&d.row.raw[6])d.cell.styles.fontStyle='bold';},
+      margin:{left:40,right:40},theme:'grid'});
+  });
+  doc.save(`NAFL_PTM_Classwise_${termLabel().replace(/[^a-zA-Z0-9]/g,'_')}.pdf`);
+  toast('Class-wise PDF downloaded','success');
+}
+
+// ═══════════════════════════════════════════
+// ADMIN TABLE & METRICS
+// ═══════════════════════════════════════════
+function renderAdminTable(){
+  const body=document.getElementById('adminTableBody');
+  if(!records.length){body.innerHTML='<tr><td colspan="12" class="px-3 py-8 text-center text-[#5d747a]">Upload student data and generate schedule.</td></tr>';return;}
+
+  const searchEl=document.getElementById('studentSearch');
+  const q=(searchEl?searchEl.value:'').trim().toLowerCase();
+  let sorted=[...records].sort((a,b)=>`${a.grade}${a.section}${a.roll_no}`.localeCompare(`${b.grade}${b.section}${b.roll_no}`,undefined,{numeric:true}));
+  if(q) sorted=sorted.filter(r=>r.student_name.toLowerCase().includes(q));
+
+  if(!sorted.length){
+    body.innerHTML=`<tr><td colspan="12" class="px-3 py-8 text-center text-[#5d747a]">No students match "${q}".</td></tr>`;
+    return;
+  }
+
+  body.innerHTML=sorted.map((r,i)=>{
+    const hasT=r.teacher_timing&&r.teacher_timing!=='';
+    const tCell=hasT
+      ?`<span class="font-semibold text-green-700">${r.teacher_timing}</span>`
+      :`<span class="text-gray-300 text-[10px] italic">awaiting teacher</span>`;
+    const dtCell=hasT&&r.teacher_date
+      ?`<span class="text-[10px] text-[#5d747a]">${r.teacher_date}</span>`
+      :'<span class="text-gray-300">—</span>';
+    const sibCell=r.sibling_group
+      ?`<span class="bg-amber-100 text-amber-700 rounded px-1.5 py-0.5 text-[10px] font-bold">🔒${r.sibling_group}</span>`
+      :'—';
+    const statusBg=hasT?'bg-green-50 text-green-700':r.status==='Scheduled'?'bg-blue-50 text-blue-700':'bg-gray-100 text-[#5d747a]';
+    const statusLabel=hasT?'✓ Teacher Set':r.status||'Imported';
+    const isSpecial=r.special_appt&&r.special_appt.time;
+    const apptCell=isSpecial
+      ?`<button onclick="openSpecialApptModal('${r._id}')" class="bg-purple-100 text-purple-700 rounded px-2 py-1 text-[10px] font-bold hover:bg-purple-200" title="${r.special_appt.reason||''}">⭐ ${r.special_appt.time}</button>`
+      :`<button onclick="openSpecialApptModal('${r._id}')" class="border border-dashed border-[#dce8e7] text-[#9aa5b4] rounded px-2 py-1 text-[10px] hover:border-[#1a4fa0] hover:text-[#1a4fa0]">+ Set</button>`;
+    const rowHighlight=isSpecial?' bg-purple-50/40':r.is_sibling?' bg-amber-50/30':'';
+    return `<tr class="border-t border-[#edf3f2] hover:bg-[#f5f9ff]${rowHighlight}">
+      <td class="px-3 py-2 text-[#5d747a] text-xs">${i+1}</td>
+      <td class="px-3 py-2 text-xs ${r.is_sibling?'font-bold':''}">${r.acadamis_id||'—'}</td>
+      <td class="px-3 py-2 text-xs">${r.admission_no||'—'}</td>
+      <td class="px-3 py-2 text-xs">${r.roll_no||'—'}</td>
+      <td class="px-3 py-2 font-semibold text-sm ${r.is_sibling||isSpecial?'font-bold':''}">${r.student_name}${isSpecial?' ⭐':''}</td>
+      <td class="px-3 py-2 text-xs">${r.grade} ${r.section}</td>
+      <td class="px-3 py-2 text-xs text-[#1a4fa0]">${r.timing||'—'}</td>
+      <td class="px-3 py-2 text-xs">${tCell}</td>
+      <td class="px-3 py-2 text-xs">${dtCell}</td>
+      <td class="px-3 py-2 text-xs">${sibCell}</td>
+      <td class="px-3 py-2"><span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium ${statusBg}">${statusLabel}</span></td>
+      <td class="px-3 py-2 text-xs">${apptCell}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Special Appointment: open/save/remove ──────────────────────────
+let _specialApptTargetId=null;
+function openSpecialApptModal(studentId){
+  const rec=records.find(r=>r._id===studentId);
+  if(!rec) return;
+  _specialApptTargetId=studentId;
+  document.getElementById('specialApptStudentName').textContent=`${rec.student_name} — ${rec.grade} ${rec.section}`;
+  document.getElementById('specialApptTime').value=rec.special_appt?rec.special_appt.time:'';
+  document.getElementById('specialApptReason').value=rec.special_appt?rec.special_appt.reason||'':'';
+  document.getElementById('specialApptErr').classList.add('hidden');
+  document.getElementById('removeApptBtn').classList.toggle('hidden',!rec.special_appt);
+  document.getElementById('specialApptModal').classList.remove('hidden');
+}
+function saveSpecialAppt(){
+  const rec=records.find(r=>r._id===_specialApptTargetId);
+  if(!rec) return;
+  const time=document.getElementById('specialApptTime').value.trim();
+  const reason=document.getElementById('specialApptReason').value.trim();
+  const err=document.getElementById('specialApptErr');
+  if(!time){err.textContent='Please enter a time slot.';err.classList.remove('hidden');return;}
+  rec.special_appt={time,reason};
+  rec.timing=time;        // also reflect immediately as their admin slot
+  rec.status='Scheduled';
+  document.getElementById('specialApptModal').classList.add('hidden');
+  persistRecords();
+  renderAdminTable();
+  updateMetrics();
+  toast(`⭐ Special appointment set for ${rec.student_name}: ${time}`,'success');
+}
+function removeSpecialAppt(){
+  const rec=records.find(r=>r._id===_specialApptTargetId);
+  if(!rec) return;
+  delete rec.special_appt;
+  document.getElementById('specialApptModal').classList.add('hidden');
+  persistRecords();
+  renderAdminTable();
+  toast(`Special appointment removed for ${rec.student_name}. Re-run Generate Schedule to assign a normal slot.`,'info');
+}
+function updateStorageIndicator(){
+  try{
+    const used=JSON.stringify(records).length;
+    const kb=Math.round(used/1024);
+    const el=document.getElementById('storageIndicator');
+    if(el) el.textContent=`💾 ${records.length} records · ${kb}KB saved`;
+  }catch(e){}
+}
+function updateMetrics(){
+  const cls=new Set(records.map(r=>`${r.grade}|${r.section}`));
+  const s=toMin(document.getElementById('adminStart').value||'08:10');
+  const e=toMin(document.getElementById('adminEnd').value||'14:00');
+  document.getElementById('mStudents').textContent=records.length;
+  document.getElementById('mClasses').textContent=cls.size;
+  document.getElementById('mGroups').textContent=siblingGroups.length;
+  document.getElementById('mScheduled').textContent=records.filter(r=>r.timing).length;
+  document.getElementById('mSlots').textContent=Math.floor((e-s)/10);
+  updateStorageIndicator();
+}
+function showDeleteConfirm(){document.getElementById('deleteBar').classList.remove('hidden');}
+async function deleteAllRecords(){
+  records=[];siblingGroups=[];teacherRows=[];
+  await apiPost('deleteAllRecords',{});
+  cacheLocally();
+  renderAdminTable();updateMetrics();renderSiblingPreview();
+  ['statFound','statImported','statDups','statFail','statFinal','mFailed'].forEach(id=>document.getElementById(id).textContent='0');
+  document.getElementById('uploadStatus').textContent='No file uploaded yet.';
+  document.getElementById('scheduleStatus').textContent='Upload student data first.';
+  document.getElementById('fileInput').value='';
+  document.getElementById('debugPanel').classList.add('hidden');
+  document.getElementById('deleteBar').classList.add('hidden');
+  document.getElementById('failSection').classList.add('hidden');
+  toast('All records cleared from shared database','success');
+}
+
+// ═══════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════
+function downloadBlob(blob,filename){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),500);
+}
+function toast(msg,type){
+  const d=document.createElement('div');
+  const c={success:'bg-green-100 text-green-800 border-green-300',error:'bg-red-100 text-red-800 border-red-300',info:'bg-blue-100 text-blue-800 border-blue-300'};
+  d.className=`pointer-events-auto px-4 py-3 rounded-xl text-xs font-medium shadow-lg border ${c[type]||c.info}`;
+  d.textContent=msg;
+  document.getElementById('toastArea').appendChild(d);
+  setTimeout(()=>d.remove(),5000);
+}
+</script>
+</body>
+</html>
