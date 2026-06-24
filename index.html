@@ -1473,10 +1473,74 @@ function renderSiblingPreview(){
     }
     d.innerHTML=`<div class="flex items-center justify-between mb-1">
       <span class="font-bold text-amber-700 text-sm">🔒 ${g.id}</span>
-      <div class="flex items-center gap-1"><span class="text-[#5d747a]">${g.members.length} students</span>${gapInfo}</div>
+      <div class="flex items-center gap-2">
+        <span class="text-[#5d747a]">${g.members.length} students</span>
+        ${gapInfo}
+        <button onclick="openSiblingEditModal('${g.id}')" class="px-2 py-1 bg-amber-600 text-white rounded text-[10px] font-bold hover:bg-amber-700">✎ Adjust</button>
+      </div>
     </div>${memberRows}`;
     w.appendChild(d);
   });
+}
+
+// ── Edit Sibling Timings Modal ──────────────────────────────
+let _editingSiblingGroupId=null;
+function openSiblingEditModal(groupId){
+  _editingSiblingGroupId=groupId;
+  const g=siblingGroups.find(sg=>sg.id===groupId);
+  if(!g) return;
+  
+  const modal=document.getElementById('siblingEditModal') || createSiblingEditModal();
+  document.getElementById('siblingEditTitle').textContent=`Adjust Timings — ${groupId}`;
+  
+  const fieldsDiv=document.getElementById('siblingEditFields');
+  fieldsDiv.innerHTML=g.members.map((m,i)=>`
+    <div class="border-t border-[#dce8e7] pt-3 mt-3">
+      <p class="font-semibold text-sm mb-2">${i+1}. ${m.student_name} (${m.grade} ${m.section})</p>
+      <input id="sibEdit_${i}" type="text" placeholder="e.g. 9:00 a.m. – 9:10 a.m." value="${m.timing||''}" class="w-full border border-[#dce8e7] rounded px-3 py-2 text-sm fr">
+    </div>
+  `).join('');
+  
+  modal.classList.remove('hidden');
+}
+
+function createSiblingEditModal(){
+  const html=`<div id="siblingEditModal" class="hidden fixed inset-0 modal-bg z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-[22px] p-7 w-full max-w-sm shadow-2xl">
+      <h3 id="siblingEditTitle" class="fd text-lg nafl-blue mb-1">Adjust Timings</h3>
+      <p class="text-xs text-[#5d747a] mb-4">Set custom timing for each sibling. Ensure gaps are ≥20 min between meetings.</p>
+      <div id="siblingEditFields" class="max-h-64 overflow-auto ts"></div>
+      <div id="siblingEditErr" class="hidden text-xs text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2 mt-3"></div>
+      <div class="flex gap-2 pt-4">
+        <button onclick="saveSiblingAdjustment()" class="flex-1 bg-amber-600 text-white rounded-xl py-2.5 text-sm font-bold hover:bg-amber-700">✅ Save</button>
+        <button onclick="document.getElementById('siblingEditModal').classList.add('hidden')" class="flex-1 border border-[#dce8e7] rounded-xl py-2.5 text-sm text-[#5d747a]">Cancel</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend',html);
+  return document.getElementById('siblingEditModal');
+}
+
+function saveSiblingAdjustment(){
+  const g=siblingGroups.find(sg=>sg.id===_editingSiblingGroupId);
+  if(!g) return;
+  
+  g.members.forEach((m,i)=>{
+    const input=document.getElementById(`sibEdit_${i}`);
+    if(input) m.timing=input.value.trim();
+  });
+  
+  // Update records with new timings
+  records.forEach(r=>{
+    const mem=g.members.find(m=>m._id===r._id);
+    if(mem) r.timing=mem.timing;
+  });
+  
+  persistRecords();
+  document.getElementById('siblingEditModal').classList.add('hidden');
+  renderSiblingPreview();
+  renderAdminTable();
+  toast(`✅ Sibling group ${_editingSiblingGroupId} timings updated. Click Regenerate Schedule to apply.`,'success');
 }
 
 // ═══════════════════════════════════════════
