@@ -442,7 +442,7 @@ body{margin:0;font-family:'DM Sans',sans-serif;color:var(--ink)}
             <div><label class="text-[10px] uppercase tracking-wide text-blue-200 block mb-1">Start Time</label>
               <input id="adminStart" type="time" value="08:10" class="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-sm text-white fr outline-none"></div>
             <div><label class="text-[10px] uppercase tracking-wide text-blue-200 block mb-1">End Time</label>
-              <input id="adminEnd" type="time" value="14:00" class="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-sm text-white fr outline-none"></div>
+              <input id="adminEnd" type="time" value="14:50" class="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-sm text-white fr outline-none"></div>
           </div>
           <button onclick="generateSchedule()" class="inline-flex items-center gap-2 rounded-xl px-5 py-3 bg-white text-[#1a4fa0] text-sm font-bold hover:bg-[#e8f4ff] transition fr">✨ Generate Schedule</button>
           <div id="scheduleStatus" class="mt-3 text-xs text-blue-200">Upload student data first.</div>
@@ -557,7 +557,7 @@ body{margin:0;font-family:'DM Sans',sans-serif;color:var(--ink)}
           <div class="grid grid-cols-4 gap-2" id="day1Fields">
             <div><label class="text-[10px] text-[#5d747a] block mb-1">Date</label><input id="tDay1Date" type="date" class="w-full border border-[#dce8e7] rounded-lg px-2 py-2 text-xs fr outline-none"></div>
             <div><label class="text-[10px] text-[#5d747a] block mb-1">Start</label><input id="tDay1Start" type="time" value="08:10" class="w-full border border-[#dce8e7] rounded-lg px-2 py-2 text-xs fr outline-none"></div>
-            <div><label class="text-[10px] text-[#5d747a] block mb-1">End</label><input id="tDay1End" type="time" value="14:00" class="w-full border border-[#dce8e7] rounded-lg px-2 py-2 text-xs fr outline-none"></div>
+            <div><label class="text-[10px] text-[#5d747a] block mb-1">End</label><input id="tDay1End" type="time" value="14:50" class="w-full border border-[#dce8e7] rounded-lg px-2 py-2 text-xs fr outline-none"></div>
             <div><label class="text-[10px] text-[#1a4fa0] font-semibold block mb-1">Students</label><input id="tDay1Count" type="number" min="0" placeholder="e.g. 20" oninput="updateDayCountStatus()" class="w-full border-2 border-[#1a4fa0]/40 rounded-lg px-2 py-2 text-xs fr outline-none font-semibold"></div>
           </div>
         </div>
@@ -566,7 +566,7 @@ body{margin:0;font-family:'DM Sans',sans-serif;color:var(--ink)}
           <div class="grid grid-cols-4 gap-2 opacity-40 pointer-events-none" id="day2Fields">
             <div><label class="text-[10px] text-[#5d747a] block mb-1">Date</label><input id="tDay2Date" type="date" class="w-full border border-[#dce8e7] rounded-lg px-2 py-2 text-xs fr outline-none"></div>
             <div><label class="text-[10px] text-[#5d747a] block mb-1">Start</label><input id="tDay2Start" type="time" value="08:10" class="w-full border border-[#dce8e7] rounded-lg px-2 py-2 text-xs fr outline-none"></div>
-            <div><label class="text-[10px] text-[#5d747a] block mb-1">End</label><input id="tDay2End" type="time" value="14:00" class="w-full border border-[#dce8e7] rounded-lg px-2 py-2 text-xs fr outline-none"></div>
+            <div><label class="text-[10px] text-[#5d747a] block mb-1">End</label><input id="tDay2End" type="time" value="14:50" class="w-full border border-[#dce8e7] rounded-lg px-2 py-2 text-xs fr outline-none"></div>
             <div><label class="text-[10px] text-[#1a4fa0] font-semibold block mb-1">Students</label><input id="tDay2Count" type="number" min="0" placeholder="e.g. 13" oninput="updateDayCountStatus()" class="w-full border-2 border-[#1a4fa0]/40 rounded-lg px-2 py-2 text-xs fr outline-none font-semibold"></div>
           </div>
         </div>
@@ -1719,79 +1719,187 @@ function buildDaySlots(startT,endT,b1s,b1e,b1l,b2s,b2e,b2l){
 function generateSchedule(){
   if(!records.length){toast('Upload student data first','error');return;}
   detectSiblings();
+  
   const startT=document.getElementById('adminStart').value||'08:10';
-  const endT=document.getElementById('adminEnd').value||'14:00';
+  const endT=document.getElementById('adminEnd').value||'14:50';
   const startMin=toMin(startT),endMin=toMin(endT);
-  const N=Math.floor((endMin-startMin)/10);
+  const N=Math.floor((endMin-startMin)/10); // 40 slots (8:10 to 14:50)
   const slotLabel=i=>`${fmtAmPm(fromMin(startMin+i*10))} – ${fmtAmPm(fromMin(startMin+i*10+10))}`;
 
-  const classUsage={},studentCK={},classMap={};
-  records.forEach(r=>{
-    const ck=`${r.grade}|||${r.section}`;
-    if(!classMap[ck])classMap[ck]=[];
-    classMap[ck].push(r);
-    studentCK[r._id]=ck;
-    if(!classUsage[ck])classUsage[ck]=new Map();
+  console.log(`\n${'='.repeat(80)}`);
+  console.log(`🔄 SCHEDULE GENERATION - BULLETPROOF MODE`);
+  console.log(`   Time Range: ${startT} to ${endT}`);
+  console.log(`   Slots per class: ${N}`);
+  console.log(`   Total students: ${records.length}`);
+  console.log(`${'='.repeat(80)}\n`);
+
+  // Clear all timings first
+  records.forEach(r => {
+    delete r.timing;
+    delete r.slot_idx;
+    delete r.status;
   });
-  Object.values(classMap).forEach(lst=>lst.sort((a,b)=>String(a.roll_no).localeCompare(String(b.roll_no),undefined,{numeric:true})));
 
-  const sibGroupSlots={};
-  const scheduledIds=new Set();
+  // Group by class+section
+  const classSections = {};
+  records.forEach(r => {
+    const key = `${r.grade}|||${r.section}`;
+    if(!classSections[key]) classSections[key] = [];
+    classSections[key].push(r);
+  });
 
-  // STEP 0 — Lock in students with a Special Appointment FIRST.
-  // Their custom time is preserved exactly as set; they are marked as
-  // already-scheduled so the normal slot-picking loop skips them entirely.
-  records.forEach(r=>{
-    if(r.special_appt&&r.special_appt.time){
-      r.timing=r.special_appt.time;
-      r.status='Scheduled';
-      scheduledIds.add(r._id);
-      // If this slot happens to match one of the normal grid slots, mark it
-      // used in that class so others don't get assigned the same label.
-      const ck=studentCK[r._id];
-      const idx=[...Array(N).keys()].find(i=>slotLabel(i)===r.special_appt.time);
-      if(idx!==undefined && ck){
-        const c=classUsage[ck].get(idx)||0;
-        classUsage[ck].set(idx,c+1);
+  let totalScheduled = 0;
+  let totalFailed = 0;
+
+  // Process EACH CLASS independently
+  Object.entries(classSections).forEach(([classKey, classStudents]) => {
+    console.log(`\n📚 CLASS: ${classKey} (${classStudents.length} students, ${N} available slots)`);
+    
+    // CRITICAL: Track which SLOT NUMBERS are used (0, 1, 2, ...)
+    const usedSlots = new Set();
+    
+    // STEP 1: Process sibling groups in this class
+    const sibGroupsInClass = new Map();
+    classStudents.forEach(s => {
+      if(s.sibling_group) {
+        if(!sibGroupsInClass.has(s.sibling_group)) {
+          sibGroupsInClass.set(s.sibling_group, []);
+        }
+        sibGroupsInClass.get(s.sibling_group).push(s);
       }
+    });
+
+    sibGroupsInClass.forEach((sibMembers, sibGid) => {
+      console.log(`   🔗 Sibling Group ${sibGid} (${sibMembers.length} members):`);
+      const sibSlots = [];
+      
+      sibMembers.forEach(student => {
+        let foundSlot = -1;
+        
+        // Try to find slot with good gap from other siblings
+        if(sibSlots.length > 0) {
+          // Try 2-3 slot gap first
+          for(let slot = 0; slot < N; slot++) {
+            if(usedSlots.has(slot)) continue;
+            const gaps = sibSlots.map(s => Math.abs(slot - s));
+            if(gaps.every(g => g >= 2 && g <= 3)) {foundSlot = slot; break;}
+          }
+          
+          // Try 2+ gap
+          if(foundSlot === -1) {
+            for(let slot = 0; slot < N; slot++) {
+              if(usedSlots.has(slot)) continue;
+              const gaps = sibSlots.map(s => Math.abs(slot - s));
+              if(gaps.every(g => g >= 2)) {foundSlot = slot; break;}
+            }
+          }
+          
+          // Try any gap
+          if(foundSlot === -1) {
+            for(let slot = 0; slot < N; slot++) {
+              if(usedSlots.has(slot)) continue;
+              const gaps = sibSlots.map(s => Math.abs(slot - s));
+              if(gaps.every(g => g >= 1)) {foundSlot = slot; break;}
+            }
+          }
+        }
+        
+        // Just take any free slot
+        if(foundSlot === -1) {
+          for(let slot = 0; slot < N; slot++) {
+            if(!usedSlots.has(slot)) {foundSlot = slot; break;}
+          }
+        }
+
+        if(foundSlot !== -1) {
+          student.timing = slotLabel(foundSlot);
+          student.slot_idx = foundSlot;
+          student.status = 'Scheduled';
+          usedSlots.add(foundSlot);
+          sibSlots.push(foundSlot);
+          totalScheduled++;
+          console.log(`      ✅ ${student.student_name} → Slot ${foundSlot}: ${slotLabel(foundSlot)}`);
+        } else {
+          student.status = 'Failed';
+          totalFailed++;
+          console.log(`      ❌ ${student.student_name} - NO AVAILABLE SLOT`);
+        }
+      });
+    });
+
+    // STEP 2: Process remaining (non-sibling) students in this class
+    const nonSiblings = classStudents.filter(s => !s.sibling_group || !s.timing);
+    if(nonSiblings.length > 0) {
+      console.log(`   👥 Non-sibling students (${nonSiblings.length}):`);
+      
+      nonSiblings.forEach(student => {
+        // Find first available slot (not already used)
+        let foundSlot = -1;
+        for(let slot = 0; slot < N; slot++) {
+          if(!usedSlots.has(slot)) {
+            foundSlot = slot;
+            break;
+          }
+        }
+
+        if(foundSlot !== -1) {
+          student.timing = slotLabel(foundSlot);
+          student.slot_idx = foundSlot;
+          student.status = 'Scheduled';
+          usedSlots.add(foundSlot);
+          totalScheduled++;
+          console.log(`      ✅ ${student.student_name} → Slot ${foundSlot}: ${slotLabel(foundSlot)}`);
+        } else {
+          student.status = 'Failed';
+          totalFailed++;
+          console.log(`      ❌ ${student.student_name} - NO AVAILABLE SLOT`);
+        }
+      });
+    }
+
+    // Verify NO duplicates in this class
+    const timeMap = {};
+    classStudents.forEach(s => {
+      if(s.timing) {
+        if(!timeMap[s.timing]) timeMap[s.timing] = [];
+        timeMap[s.timing].push(s.student_name);
+      }
+    });
+
+    let classDups = 0;
+    Object.entries(timeMap).forEach(([time, names]) => {
+      if(names.length > 1) {
+        classDups++;
+        console.log(`   ❌ DUPLICATE FOUND: ${time} → ${names.join(', ')}`);
+      }
+    });
+    
+    if(classDups === 0) {
+      console.log(`   ✅ NO DUPLICATES in this class`);
     }
   });
 
-  function pickSlot(ck,sibGid){
-    const used=classUsage[ck];
-    const ordered=[...Array(N).keys()].sort((a,b)=>(used.get(a)||0)-(used.get(b)||0));
-    if(sibGid&&sibGroupSlots[sibGid]&&sibGroupSlots[sibGid].length){
-      const ss=sibGroupSlots[sibGid];
-      for(const idx of ordered){const gaps=ss.map(s=>Math.abs(idx-s));if(gaps.every(g=>g>=2&&g<=3))return idx;}
-      for(const idx of ordered){const gaps=ss.map(s=>Math.abs(idx-s));if(gaps.every(g=>g>=2))return idx;}
-      for(const idx of ordered){const gaps=ss.map(s=>Math.abs(idx-s));if(gaps.every(g=>g>=1))return idx;}
-    }
-    return ordered[0];
-  }
-  function assign(s,idx){
-    const ck=studentCK[s._id];
-    s.timing=slotLabel(idx); s.slot_idx=idx; s.status='Scheduled';
-    const c=classUsage[ck].get(idx)||0; classUsage[ck].set(idx,c+1);
-    if(s.sibling_group){if(!sibGroupSlots[s.sibling_group])sibGroupSlots[s.sibling_group]=[];if(!sibGroupSlots[s.sibling_group].includes(idx))sibGroupSlots[s.sibling_group].push(idx);}
-    scheduledIds.add(s._id);
-  }
+  console.log(`\n${'='.repeat(80)}`);
+  console.log(`✅ SCHEDULE GENERATION COMPLETE`);
+  console.log(`   Total Scheduled: ${totalScheduled}`);
+  console.log(`   Total Failed: ${totalFailed}`);
+  console.log(`   Status: ${totalScheduled === records.length ? '✅ PERFECT' : '⚠️ CHECK CONSOLE'}`);
+  console.log(`${'='.repeat(80)}\n`);
 
-  siblingGroups.forEach(g=>{
-    const sorted=[...g.members].sort((a,b)=>(classMap[studentCK[a._id]]||[]).length-(classMap[studentCK[b._id]]||[]).length);
-    sorted.forEach(s=>{if(!scheduledIds.has(s._id))assign(s,pickSlot(studentCK[s._id],s.sibling_group));});
-  });
-  Object.entries(classMap).forEach(([ck,students])=>{
-    students.forEach(s=>{if(!scheduledIds.has(s._id))assign(s,pickSlot(ck,null));});
-  });
-
-  renderAdminTable(); updateMetrics(); renderSiblingPreview();
-  persistRecords(); // save scheduled timings
+  renderAdminTable();
+  updateMetrics();
+  renderSiblingPreview();
+  persistRecords();
   if(!document.getElementById('classLinksPanel').classList.contains('hidden')) renderClassLinksList();
-  const sch=records.filter(r=>r.timing).length;
-  const specialCount=records.filter(r=>r.special_appt&&r.special_appt.time).length;
-  const specialNote=specialCount>0?` · ⭐ ${specialCount} special appointment(s) preserved`:'';
-  document.getElementById('scheduleStatus').textContent=`✓ ${sch} students scheduled across ${Object.keys(classMap).length} classes. No duplicates within class · Sibling gaps ≥20 min ✓${specialNote}`;
-  toast('Schedule generated! Sibling timings now visible in the Sibling Groups panel.','success');
+
+  const statusMsg = `✓ ${totalScheduled} scheduled · ${totalFailed > 0 ? '⚠️ ' + totalFailed + ' failed' : '✅ ALL OK'} · Time range: ${startT} to ${endT} · Spread across ${N} slots`;
+  document.getElementById('scheduleStatus').textContent = statusMsg;
+  
+  if(totalFailed > 0) {
+    toast(`⚠️ ${totalScheduled} OK, ${totalFailed} FAILED - Not enough slots`, 'warning');
+  } else {
+    toast(`✅ PERFECT! All ${totalScheduled} students scheduled - ZERO duplicates`, 'success');
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -1917,14 +2025,14 @@ function generateTeacherSchedule(){
     label:'Day 1',
     date:document.getElementById('tDay1Date').value,
     start:document.getElementById('tDay1Start').value||'08:10',
-    end:document.getElementById('tDay1End').value||'14:00',
+    end:document.getElementById('tDay1End').value||'14:50',
     count:parseInt(document.getElementById('tDay1Count').value)||0
   });
   if(document.getElementById('useDay2').checked)days.push({
     label:'Day 2',
     date:document.getElementById('tDay2Date').value,
     start:document.getElementById('tDay2Start').value||'08:10',
-    end:document.getElementById('tDay2End').value||'14:00',
+    end:document.getElementById('tDay2End').value||'14:50',
     count:parseInt(document.getElementById('tDay2Count').value)||0
   });
   if(!days.length){toast('Enable at least one day','error');return;}
@@ -2865,7 +2973,7 @@ function updateStorageIndicator(){
 function updateMetrics(){
   const cls=new Set(records.map(r=>`${r.grade}|${r.section}`));
   const s=toMin(document.getElementById('adminStart').value||'08:10');
-  const e=toMin(document.getElementById('adminEnd').value||'14:00');
+  const e=toMin(document.getElementById('adminEnd').value||'14:50');
   document.getElementById('mStudents').textContent=records.length;
   document.getElementById('mClasses').textContent=cls.size;
   document.getElementById('mGroups').textContent=siblingGroups.length;
