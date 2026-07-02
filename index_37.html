@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -1779,71 +1780,132 @@ function generateSchedule(){
     }
   });
 
-  function pickSlot(ck,sibGid,isSpecial=false){
-    const used=classUsage[ck];
-    let ordered=[...Array(N).keys()].sort((a,b)=>(used.get(a)||0)-(used.get(b)||0));
+  function pickSlot(ck, sibGid, isSpecial=false){
+    const used = classUsage[ck];
+    const classStudents = classMap[ck] || [];
     
-    // If NOT a special appointment and slot 0 is reserved, exclude it
+    // Get all slots sorted by usage
+    let ordered = [...Array(N).keys()].sort((a,b) => (used.get(a)||0) - (used.get(b)||0));
+    
+    // Exclude slot 0 if reserved and this is not a special appointment
     if(!isSpecial && specialSlotReserved[ck]){
-      ordered=ordered.filter(idx=>idx!==0);
+      ordered = ordered.filter(idx => idx !== 0);
     }
     
-    // For sibling groups: maintain 20-30 min gap (2-3 slots of 10 min each)
-    if(sibGid&&sibGroupSlots[sibGid]&&sibGroupSlots[sibGid].length){
-      const ss=sibGroupSlots[sibGid];
-      // Priority 1: 20-30 min gap (2-3 slots)
+    // For siblings: find slot with proper gap AND not already taken
+    if(sibGid && sibGroupSlots[sibGid] && sibGroupSlots[sibGid].length){
+      const sibSlots = sibGroupSlots[sibGid];
+      
+      // Priority 1: 2-3 slots gap (20-30 min) + not already assigned
       for(const idx of ordered){
-        const gaps=ss.map(s=>Math.abs(idx-s));
-        if(gaps.every(g=>g>=2&&g<=3))return idx;
+        const alreadyTaken = classStudents.some(st => st.slot_idx === idx);
+        if(alreadyTaken) continue;
+        const gaps = sibSlots.map(s => Math.abs(idx - s));
+        if(gaps.every(g => g >= 2 && g <= 3)) return idx;
       }
-      // Priority 2: At least 20 min gap (2+ slots)
+      
+      // Priority 2: 2+ slots gap (20+ min) + not already assigned
       for(const idx of ordered){
-        const gaps=ss.map(s=>Math.abs(idx-s));
-        if(gaps.every(g=>g>=2))return idx;
+        const alreadyTaken = classStudents.some(st => st.slot_idx === idx);
+        if(alreadyTaken) continue;
+        const gaps = sibSlots.map(s => Math.abs(idx - s));
+        if(gaps.every(g => g >= 2)) return idx;
       }
-      // Priority 3: At least 10 min gap (1+ slots)
+      
+      // Priority 3: 1+ slot gap (10+ min) + not already assigned
       for(const idx of ordered){
-        const gaps=ss.map(s=>Math.abs(idx-s));
-        if(gaps.every(g=>g>=1))return idx;
+        const alreadyTaken = classStudents.some(st => st.slot_idx === idx);
+        if(alreadyTaken) continue;
+        const gaps = sibSlots.map(s => Math.abs(idx - s));
+        if(gaps.every(g => g >= 1)) return idx;
       }
     }
     
-    // Return slot with lowest usage (avoids duplicates)
-    return ordered[0];
+    // For non-sibling: find any slot not already taken
+    for(const idx of ordered){
+      const alreadyTaken = classStudents.some(st => st.slot_idx === idx);
+      if(!alreadyTaken) return idx;
+    }
+    
+    // Fallback (should never reach here if N is large enough)
+    return 0;
   }
-  function assign(s,idx){
-    const ck=studentCK[s._id];
+  
+  function assign(s, idx){
+    const ck = studentCK[s._id];
+    const classStudents = classMap[ck] || [];
     
-    // CRITICAL: Prevent duplicate timings for non-siblings!
-    if(!s.sibling_group){
-      // Check if another non-sibling in this class already has this slot
-      const classStudents=classMap[ck]||[];
-      const conflict=classStudents.find(other=>
-        other._id!==s._id && 
-        other.slot_idx===idx && 
-        (!other.sibling_group||other.sibling_group!==s.sibling_group)
-      );
-      if(conflict){
-        console.warn(`⚠️ Duplicate prevention: ${s.student_name} can't use slot ${slotLabel(idx)} (already used by ${conflict.student_name})`);
-        return; // Skip this assignment - will be retried with different slot
+    // CRITICAL: Check if ANY OTHER student in this class already has this slot
+    const conflict = classStudents.find(other => 
+      other._id !== s._id && 
+      other.slot_idx === idx
+    );
+    
+    if(conflict){
+      // ABORT - this slot is taken, don't assign
+      console.warn(`❌ CONFLICT: ${s.student_name} cannot use slot ${slotLabel(idx)} (${conflict.student_name} already assigned)`);
+      return false;
+    }
+    
+    // Safe to assign
+    s.timing = slotLabel(idx);
+    s.slot_idx = idx;
+    s.status = 'Scheduled';
+    
+    // Mark this slot as used in this class
+    const c = classUsage[ck].get(idx) || 0;
+    classUsage[ck].set(idx, c + 1);
+    
+    // Track sibling group slots
+    if(s.sibling_group){
+      if(!sibGroupSlots[s.sibling_group]) sibGroupSlots[s.sibling_group] = [];
+      if(!sibGroupSlots[s.sibling_group].includes(idx)){
+        sibGroupSlots[s.sibling_group].push(idx);
       }
     }
     
-    s.timing=slotLabel(idx); s.slot_idx=idx; s.status='Scheduled';
-    const c=classUsage[ck].get(idx)||0; classUsage[ck].set(idx,c+1);
-    if(s.sibling_group){
-      if(!sibGroupSlots[s.sibling_group])sibGroupSlots[s.sibling_group]=[];
-      if(!sibGroupSlots[s.sibling_group].includes(idx))sibGroupSlots[s.sibling_group].push(idx);
-    }
     scheduledIds.add(s._id);
+    console.log(`✅ Assigned: ${s.student_name} → Slot ${slotLabel(idx)}`);
+    return true;
   }
 
+  // Assign sibling groups first (they have strict gap requirements)
   siblingGroups.forEach(g=>{
     const sorted=[...g.members].sort((a,b)=>(classMap[studentCK[a._id]]||[]).length-(classMap[studentCK[b._id]]||[]).length);
-    sorted.forEach(s=>{if(!scheduledIds.has(s._id))assign(s,pickSlot(studentCK[s._id],s.sibling_group));});
+    sorted.forEach(s=>{
+      if(!scheduledIds.has(s._id)){
+        let assigned = false;
+        let attempts = 0;
+        while(!assigned && attempts < N){
+          const slot = pickSlot(studentCK[s._id], s.sibling_group);
+          assigned = assign(s, slot);
+          attempts++;
+        }
+        if(!assigned){
+          console.error(`❌ Failed to assign ${s.student_name} after ${attempts} attempts`);
+          s.status = 'Failed - No available slots';
+        }
+      }
+    });
   });
-  Object.entries(classMap).forEach(([ck,students])=>{
-    students.forEach(s=>{if(!scheduledIds.has(s._id))assign(s,pickSlot(ck,null));});
+  
+  // Assign regular students (no sibling constraints)
+  Object.entries(classMap).forEach(([ck, students])=>{
+    students.forEach(s=>{
+      if(!scheduledIds.has(s._id)){
+        let assigned = false;
+        let attempts = 0;
+        while(!assigned && attempts < N){
+          const slot = pickSlot(ck, null);
+          assigned = assign(s, slot);
+          attempts++;
+        }
+        if(!assigned){
+          console.error(`❌ Failed to assign ${s.student_name} after ${attempts} attempts`);
+          s.status = 'Failed - No available slots';
+        }
+      }
+    });
   });
 
   renderAdminTable(); updateMetrics(); renderSiblingPreview();
