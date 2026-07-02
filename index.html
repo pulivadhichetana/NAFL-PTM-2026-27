@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -1689,6 +1690,20 @@ function saveSiblingAdjustment(){
 }
 
 // ═══════════════════════════════════════════
+// CLASS-KEY NORMALIZATION
+// A class is grouped/matched by grade+section in several places
+// (generateSchedule, generateTeacherSchedule, getClassSize). If raw data
+// has formatting variants of the same class ("Grade 3" vs "GRADE 3" vs
+// "Grade  3" with double space), naive string equality would silently
+// split one real class into two independent scheduling buckets — each
+// starting slot assignment at 0 — producing duplicate displayed timings
+// even though each bucket is internally unique. normKey() closes this
+// off structurally: every grouping/matching site below uses it instead
+// of raw string equality, so formatting noise can never cause a collision.
+function normKey(s){return(s||'').toString().trim().replace(/\s+/g,' ').toLowerCase();}
+function classKeyOf(r){return `${normKey(r.grade)}|||${normKey(r.section)}`;}
+
+// ═══════════════════════════════════════════
 // TIME HELPERS
 // ═══════════════════════════════════════════
 function toMin(t){const[h,m]=t.split(':').map(Number);return h*60+m;}
@@ -1759,7 +1774,7 @@ function generateSchedule(){
   // Group students by class
   const byClass = {};
   records.forEach(r => {
-    const ck = `${r.grade}|||${r.section}`;
+    const ck = classKeyOf(r);
     if(!byClass[ck]) byClass[ck] = [];
     byClass[ck].push(r);
   });
@@ -1829,6 +1844,25 @@ function generateSchedule(){
   // Count results
   const scheduled = records.filter(r => r.status === 'Scheduled').length;
   const failed = records.filter(r => r.status && r.status.includes('Failed')).length;
+
+  // SAFETY NET — re-scan the result for duplicate timings within the same
+  // (normalized) class. This should be structurally impossible given the
+  // occupiedSlots logic above, but if it ever happens (corrupted data,
+  // future code change, etc.) we want a LOUD warning immediately, not a
+  // teacher discovering it days later in a printed circular.
+  const dupCheck = {};
+  const duplicatesFound = [];
+  records.forEach(r=>{
+    if(r.special_appt && r.special_appt.time) return; // free-form, not part of the grid
+    if(!r.timing || r.status!=='Scheduled') return;
+    const key = classKeyOf(r)+'|||'+r.timing;
+    if(dupCheck[key]) duplicatesFound.push(`${r.student_name} (${r.grade} ${r.section}) @ ${r.timing} clashes with ${dupCheck[key]}`);
+    else dupCheck[key]=r.student_name;
+  });
+  if(duplicatesFound.length){
+    console.error('⚠️ DUPLICATE TIMINGS DETECTED AFTER GENERATION:', duplicatesFound);
+    toast(`🚨 ${duplicatesFound.length} duplicate timing(s) detected — check console and re-import data`, 'error');
+  }
 
   renderAdminTable(); 
   updateMetrics(); 
@@ -1902,7 +1936,7 @@ function getClassSize(){
   const grade=document.getElementById('tGrade').value;
   const section=document.getElementById('tSection').value;
   if(!grade||!section) return 0;
-  return records.filter(r=>r.grade===grade&&r.section===section&&r.timing).length;
+  return records.filter(r=>normKey(r.grade)===normKey(grade)&&normKey(r.section)===normKey(section)&&r.timing).length;
 }
 
 // Live feedback: shows total class size vs. the sum of Day 1 + Day 2 counts,
@@ -1959,7 +1993,7 @@ function generateTeacherSchedule(){
   const ct=document.getElementById('tCT').value.trim();
   const act=document.getElementById('tACT').value.trim();
   if(!grade||!section){toast('Select grade and section first','error');return;}
-  const classStudents=records.filter(r=>r.grade===grade&&r.section===section&&r.timing);
+  const classStudents=records.filter(r=>normKey(r.grade)===normKey(grade)&&normKey(r.section)===normKey(section)&&r.timing);
   if(!classStudents.length){toast('No scheduled students. Ask Admin to generate the schedule first.','error');return;}
   const {b1s,b1e,b1l,b2s,b2e,b2l,brk1On,brk2On}=getBreakConfig();
   const sorted=[...classStudents].sort((a,b)=>(a.slot_idx||0)-(b.slot_idx||0));
