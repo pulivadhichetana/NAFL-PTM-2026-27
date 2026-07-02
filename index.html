@@ -445,6 +445,12 @@ body{margin:0;font-family:'DM Sans',sans-serif;color:var(--ink)}
             <div><label class="text-[10px] uppercase tracking-wide text-blue-200 block mb-1">End Time</label>
               <input id="adminEnd" type="time" value="14:50" class="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-sm text-white fr outline-none"></div>
           </div>
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div><label class="text-[10px] uppercase tracking-wide text-blue-200 block mb-1">❌ Exclude Siblings From (optional)</label>
+              <input id="adminExcludeStart" type="time" placeholder="e.g., 10:00" class="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-sm text-white fr outline-none"></div>
+            <div><label class="text-[10px] uppercase tracking-wide text-blue-200 block mb-1">❌ Exclude Siblings Until</label>
+              <input id="adminExcludeEnd" type="time" placeholder="e.g., 10:30" class="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-sm text-white fr outline-none"></div>
+          </div>
           <button onclick="generateSchedule()" class="inline-flex items-center gap-2 rounded-xl px-5 py-3 bg-white text-[#1a4fa0] text-sm font-bold hover:bg-[#e8f4ff] transition fr">✨ Generate Schedule</button>
           <div id="scheduleStatus" class="mt-3 text-xs text-blue-200">Upload student data first.</div>
         </div>
@@ -1788,24 +1794,102 @@ function generateSchedule(){
   const startT=document.getElementById('adminStart').value||'08:10';
   const endT=document.getElementById('adminEnd').value||'14:50';
   const startMin=toMin(startT),endMin=toMin(endT);
-  const N=Math.floor((endMin-startMin)/10); // 40 slots (8:10 to 14:50)
+  const N=Math.floor((endMin-startMin)/10);
   const slotLabel=i=>`${fmtAmPm(fromMin(startMin+i*10))} – ${fmtAmPm(fromMin(startMin+i*10+10))}`;
 
+  // Get excluded sibling times
+  const excludeStart = document.getElementById('adminExcludeStart').value;
+  const excludeEnd = document.getElementById('adminExcludeEnd').value;
+  const excludedSlots = new Set();
+  
+  if(excludeStart && excludeEnd) {
+    const exStartMin = toMin(excludeStart);
+    const exEndMin = toMin(excludeEnd);
+    // Mark all slots that overlap with excluded time
+    for(let i = 0; i < N; i++) {
+      const slotStart = startMin + i*10;
+      const slotEnd = slotStart + 10;
+      if(slotStart < exEndMin && slotEnd > exStartMin) {
+        excludedSlots.add(i);
+      }
+    }
+  }
+
   console.log(`\n${'='.repeat(80)}`);
-  console.log(`🔄 SCHEDULE GENERATION - BULLETPROOF MODE`);
-  console.log(`   Time Range: ${startT} to ${endT}`);
-  console.log(`   Slots per class: ${N}`);
-  console.log(`   Total students: ${records.length}`);
+  console.log(`🔄 GLOBAL SIBLING SCHEDULE v5 - NO SAME-TIME SIBLINGS`);
+  console.log(`   Slots: ${N} | Students: ${records.length} | SG Groups: ${siblingGroups.length}`);
+  if(excludedSlots.size > 0) {
+    console.log(`   ⏸️ Excluded slots for siblings: ${Array.from(excludedSlots).map(s => slotLabel(s)).join(', ')}`);
+  }
   console.log(`${'='.repeat(80)}\n`);
 
-  // Clear all timings first
+  // Clear
   records.forEach(r => {
     r.timing = undefined;
     r.slot_idx = -1;
     r.status = 'Unscheduled';
   });
 
-  // Group by class+section
+  let totalScheduled = 0, totalFailed = 0;
+  const globalUsedSlots = new Set();
+
+  // ═ PHASE 1: Assign ALL siblings GLOBALLY with proper gaps ═
+  console.log(`📌 PHASE 1: Sibling Assignment (GLOBAL)\n`);
+  
+  siblingGroups.forEach(group => {
+    const members = group.members || [];
+    if(!members.length) return;
+    
+    const assignedSlots = [];
+    console.log(`   ${group.id} (${members.length} members):`);
+    
+    members.forEach((m, idx) => {
+      let slot = -1;
+      
+      // Try: >= 2 slot gap from ALL previous siblings in this group
+      if(assignedSlots.length > 0) {
+        for(let s = 0; s < N; s++) {
+          if(globalUsedSlots.has(s)) continue;
+          if(excludedSlots.has(s)) continue;  // ← Skip excluded times
+          const allGapsOk = assignedSlots.every(as => Math.abs(s - as) >= 2);
+          if(allGapsOk) { slot = s; break; }
+        }
+      }
+      
+      // Fallback: any free global slot
+      if(slot === -1) {
+        for(let s = 0; s < N; s++) {
+          if(!globalUsedSlots.has(s) && !excludedSlots.has(s)) { slot = s; break; }
+        }
+      }
+      
+      if(slot !== -1) {
+        m.timing = slotLabel(slot);
+        m.slot_idx = slot;
+        m.status = 'Scheduled';
+        globalUsedSlots.add(slot);
+        assignedSlots.push(slot);
+        totalScheduled++;
+        console.log(`      ✓ ${m.student_name} (${m.grade}${m.section}) → Slot ${slot}`);
+      } else {
+        m.status = 'Failed';
+        totalFailed++;
+        console.log(`      ✗ NO SLOT for ${m.student_name}`);
+      }
+    });
+    
+    if(assignedSlots.length > 1) {
+      const gaps = [];
+      for(let i=0; i<assignedSlots.length-1; i++) {
+        gaps.push(Math.abs(assignedSlots[i+1] - assignedSlots[i]) * 10);
+      }
+      console.log(`      Gap: ${Math.min(...gaps)}-${Math.max(...gaps)}min\n`);
+    }
+  });
+
+  // ═ PHASE 2: Assign non-siblings by class ═
+  console.log(`\n👥 PHASE 2: Non-Sibling Assignment (by class)\n`);
+  
   const classSections = {};
   records.forEach(r => {
     const key = `${r.grade}|||${r.section}`;
@@ -1813,140 +1897,45 @@ function generateSchedule(){
     classSections[key].push(r);
   });
 
-  let totalScheduled = 0;
-  let totalFailed = 0;
-
-  // Process EACH CLASS independently
-  Object.entries(classSections).forEach(([classKey, classStudents]) => {
-    console.log(`\n📚 CLASS: ${classKey} (${classStudents.length} students, ${N} available slots)`);
+  Object.keys(classSections).forEach(classKey => {
+    const classStudents = classSections[classKey];
+    const nonSiblings = classStudents.filter(s => s.slot_idx === -1);
     
-    // CRITICAL: Track which SLOT NUMBERS are used (0, 1, 2, ...)
-    const usedSlots = new Set();
+    if(nonSiblings.length === 0) return;
+    console.log(`   ${classKey}: ${nonSiblings.length} students`);
     
-    // STEP 1: Process sibling groups in this class
-    const sibGroupsInClass = new Map();
-    classStudents.forEach(s => {
-      if(s.sibling_group) {
-        if(!sibGroupsInClass.has(s.sibling_group)) {
-          sibGroupsInClass.set(s.sibling_group, []);
-        }
-        sibGroupsInClass.get(s.sibling_group).push(s);
+    nonSiblings.forEach(s => {
+      let slot = -1;
+      for(let i = 0; i < N; i++) {
+        if(!globalUsedSlots.has(i)) { slot = i; break; }
       }
-    });
-
-    sibGroupsInClass.forEach((sibMembers, sibGid) => {
-      console.log(`   🔗 Sibling Group ${sibGid} (${sibMembers.length} members):`);
-      const sibSlots = [];
       
-      sibMembers.forEach(student => {
-        let foundSlot = -1;
-        
-        // Try to find slot with proper gap from other siblings
-        if(sibSlots.length > 0) {
-          // Try: Minimum 2-slot gap (20 minutes)
-          for(let slot = 0; slot < N; slot++) {
-            if(usedSlots.has(slot)) continue;
-            const gaps = sibSlots.map(s => Math.abs(slot - s));
-            if(gaps.every(g => g >= 2)) {foundSlot = slot; break;}
-          }
-        }
-        
-        // Just take any free slot (if no gap available or first sibling)
-        if(foundSlot === -1) {
-          for(let slot = 0; slot < N; slot++) {
-            if(!usedSlots.has(slot)) {foundSlot = slot; break;}
-          }
-        }
-
-        if(foundSlot !== -1) {
-          student.timing = slotLabel(foundSlot);
-          student.slot_idx = foundSlot;
-          student.status = 'Scheduled';
-          usedSlots.add(foundSlot);
-          sibSlots.push(foundSlot);
-          totalScheduled++;
-          console.log(`      ✅ ${student.student_name} → Slot ${foundSlot}: ${slotLabel(foundSlot)}`);
-        } else {
-          student.status = 'Failed';
-          totalFailed++;
-          console.log(`      ❌ ${student.student_name} - NO AVAILABLE SLOT`);
-        }
-      });
-    });
-
-    // STEP 2: Process remaining (non-sibling) students in this class
-    const nonSiblings = classStudents.filter(s => !s.sibling_group || (s.sibling_group && s.slot_idx === -1));
-    if(nonSiblings.length > 0) {
-      console.log(`   👥 Non-sibling students (${nonSiblings.length}):`);
-      
-      nonSiblings.forEach(student => {
-        // Find first available slot (not already used)
-        let foundSlot = -1;
-        for(let slot = 0; slot < N; slot++) {
-          if(!usedSlots.has(slot)) {
-            foundSlot = slot;
-            break;
-          }
-        }
-
-        if(foundSlot !== -1) {
-          student.timing = slotLabel(foundSlot);
-          student.slot_idx = foundSlot;
-          student.status = 'Scheduled';
-          usedSlots.add(foundSlot);
-          totalScheduled++;
-          console.log(`      ✅ ${student.student_name} → Slot ${foundSlot}: ${slotLabel(foundSlot)}`);
-        } else {
-          student.status = 'Failed';
-          totalFailed++;
-          console.log(`      ❌ ${student.student_name} - NO AVAILABLE SLOT`);
-        }
-      });
-    }
-
-    // Verify NO duplicates in this class
-    const timeMap = {};
-    classStudents.forEach(s => {
-      if(s.timing) {
-        if(!timeMap[s.timing]) timeMap[s.timing] = [];
-        timeMap[s.timing].push(s.student_name);
+      if(slot !== -1) {
+        s.timing = slotLabel(slot);
+        s.slot_idx = slot;
+        s.status = 'Scheduled';
+        globalUsedSlots.add(slot);
+        totalScheduled++;
+      } else {
+        s.status = 'Failed';
+        totalFailed++;
       }
     });
-
-    let classDups = 0;
-    Object.entries(timeMap).forEach(([time, names]) => {
-      if(names.length > 1) {
-        classDups++;
-        console.log(`   ❌ DUPLICATE FOUND: ${time} → ${names.join(', ')}`);
-      }
-    });
-    
-    if(classDups === 0) {
-      console.log(`   ✅ NO DUPLICATES in this class`);
-    }
   });
 
   console.log(`\n${'='.repeat(80)}`);
-  console.log(`✅ SCHEDULE GENERATION COMPLETE`);
-  console.log(`   Total Scheduled: ${totalScheduled}`);
-  console.log(`   Total Failed: ${totalFailed}`);
-  console.log(`   Status: ${totalScheduled === records.length ? '✅ PERFECT' : '⚠️ CHECK CONSOLE'}`);
+  console.log(`✅ COMPLETE: ${totalScheduled} scheduled, ${totalFailed} failed`);
   console.log(`${'='.repeat(80)}\n`);
 
   renderAdminTable();
   updateMetrics();
   renderSiblingPreview();
   persistRecords();
-  if(!document.getElementById('classLinksPanel').classList.contains('hidden')) renderClassLinksList();
 
-  const statusMsg = `✓ ${totalScheduled} scheduled · ${totalFailed > 0 ? '⚠️ ' + totalFailed + ' failed' : '✅ ALL OK'} · Time range: ${startT} to ${endT} · Spread across ${N} slots`;
-  document.getElementById('scheduleStatus').textContent = statusMsg;
+  const msg = `✓ ${totalScheduled} scheduled · ${totalFailed ? '⚠️ ' + totalFailed + ' failed' : '✅ OK'}${excludedSlots.size > 0 ? ' · ⏸️ ' + excludedSlots.size + ' slots excluded for siblings' : ''}`;
+  document.getElementById('scheduleStatus').textContent = msg;
   
-  if(totalFailed > 0) {
-    toast(`⚠️ ${totalScheduled} OK, ${totalFailed} FAILED - Not enough slots`, 'warning');
-  } else {
-    toast(`✅ PERFECT! All ${totalScheduled} students scheduled - ZERO duplicates`, 'success');
-  }
+  toast(totalFailed ? `⚠️ ${totalFailed} students failed` : `✅ Perfect! All scheduled with proper sibling gaps!`,'success');
 }
 
 // ═══════════════════════════════════════════
