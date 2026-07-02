@@ -1604,8 +1604,17 @@ function renderSiblingPreview(){
       const timingTag=hasTiming
         ?`<span class="ml-1 bg-[#1a4fa0] text-white rounded px-1.5 py-0.5 font-bold text-[10px]">⏰ ${m.timing}</span>`
         :`<span class="ml-1 bg-gray-100 text-gray-400 rounded px-1.5 py-0.5 text-[10px]">not yet scheduled</span>`;
-      return `<div class="flex items-center gap-1 mt-1"><b>${m.student_name}</b> <span class="text-[#5d747a]">(${m.grade} ${m.section})</span>${timingTag}</div>`;
+      // Show the raw sibling_details text that caused this match, so bad
+      // source data (typos, stray initials, copy-paste errors) is visible
+      // at a glance instead of requiring a code-level trace.
+      const rawTag=m.sibling_details?`<div class="text-[10px] text-[#9aa5b4] ml-0 mt-0.5">↳ typed: "${m.sibling_details}"</div>`:'';
+      return `<div class="mt-1"><div class="flex items-center gap-1"><b>${m.student_name}</b> <span class="text-[#5d747a]">(${m.grade} ${m.section})</span>${timingTag}</div>${rawTag}</div>`;
     }).join('');
+    // Unusually large groups (5+) are almost always bad data (typo, stray
+    // initial, copy-paste error) rather than a real family — flag it.
+    const sizeWarning=g.members.length>=5
+      ?`<div class="text-[10px] text-red-700 bg-red-50 border border-red-200 rounded px-2 py-1 mt-1">⚠️ ${g.members.length} students in one group is unusual — please verify this isn't a data-entry error</div>`
+      :'';
     // Gap indicator between siblings if scheduled
     let gapInfo='';
     const scheduled=g.members.filter(m=>m.slot_idx>=0);
@@ -1627,7 +1636,7 @@ function renderSiblingPreview(){
         ${gapInfo}
         <button onclick="openSiblingEditModal('${g.id}')" class="px-2 py-1 bg-amber-600 text-white rounded text-[10px] font-bold hover:bg-amber-700">✎ Adjust</button>
       </div>
-    </div>${memberRows}`;
+    </div>${sizeWarning}${memberRows}`;
     w.appendChild(d);
   });
 }
@@ -1716,9 +1725,16 @@ function namesMatch(a,b){
   a=normKey(a); b=normKey(b);
   if(!a||!b) return false;
   if(a===b) return true;
-  const wa=a.split(' '), wb=b.split(' ');
+  const wa=a.split(' ').filter(Boolean), wb=b.split(' ').filter(Boolean);
   const containsRun=(big,small)=>{
     if(small.length>big.length) return false;
+    // A match can never rest on bare initials alone (e.g. a lone "D").
+    // Real-world sibling_details entries sometimes contain single-letter
+    // initials, and without this guard a common initial can silently
+    // link together students who share nothing but that one letter —
+    // exactly the failure mode that produced a 5-student "sibling group"
+    // spanning Montessori through Grade 7 in testing.
+    if(!small.some(t=>t.length>=3)) return false;
     for(let i=0;i<=big.length-small.length;i++){
       if(small.every((w,j)=>big[i+j]===w)) return true;
     }
