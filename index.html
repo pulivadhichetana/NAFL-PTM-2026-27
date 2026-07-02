@@ -310,7 +310,7 @@ body{margin:0;font-family:'DM Sans',sans-serif;color:var(--ink)}
         </div>
       </div>
       <p class="text-xs text-[#5d747a] bg-[#f0f5ff] border border-[#1a4fa0]/20 rounded-xl px-3 py-2 mb-4">
-        Sets a fixed custom time for this student. It will be excluded from the normal slot rotation and never reassigned by Generate Schedule, just like sibling timings.
+        🔒 <strong>Slot 0 (8:00–8:10) is RESERVED</strong> for special appointments only. Regular students will be assigned to slots starting 8:10. Special appointments can use any time slot. Always add a reason for admin reference.
       </p>
       <div class="space-y-3">
         <div>
@@ -319,8 +319,9 @@ body{margin:0;font-family:'DM Sans',sans-serif;color:var(--ink)}
           <p class="text-[10px] text-[#5d747a] mt-1">Type the exact time range to display on the schedule (any format/duration is allowed).</p>
         </div>
         <div>
-          <label class="text-xs font-semibold text-[#5d747a] block mb-1">Reason (optional, for Admin reference only)</label>
-          <input id="specialApptReason" type="text" placeholder="e.g. Parent travelling, early slot requested" class="w-full border border-[#dce8e7] rounded-xl px-3 py-2.5 text-sm fr outline-none">
+          <label class="text-xs font-semibold text-[#5d747a] block mb-1">Reason <span class="text-red-600">*Important</span> - for admin reference only</label>
+          <input id="specialApptReason" type="text" placeholder="e.g. VIP parent, early travel, special need, etc." class="w-full border border-[#dce8e7] rounded-xl px-3 py-2.5 text-sm fr outline-none">
+          <p class="text-[10px] text-[#5d747a] mt-1">Why is this slot special? Document the reason for future reference.</p>
         </div>
         <div id="specialApptErr" class="hidden text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2"></div>
         <div class="flex gap-2 pt-1">
@@ -768,7 +769,7 @@ let _nid=1;
 // ⚠️ PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE ⚠️
 // See HOW_TO_DEPLOY.html → "Connect Google Sheets Backend" for setup steps.
 // It looks like: https://script.google.com/macros/s/AKfycb.../exec
-const API_URL = 'https://script.google.com/macros/s/AKfycbzmY4F6C4mOCzJEjVm4T8-Tal4Piv0rUGovdHGFxgPpVSfbFBxtGIvwgC8BtudEcE2n/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbx950cQI6ub-keeSj9EuLPJGNO5V0iR0uX8MiWMcyEibNDjFyUS7y2bvcoSwYbLwycx/exec';
 
 let SETTINGS = {
   schoolName:'National Academy for Learning',
@@ -1555,16 +1556,35 @@ function detectSiblings(){
   records.forEach(r=>{r.sibling_group='';r.is_sibling=false;});
   const assigned=new Set();
   let gi=1;
+  
   records.forEach(s=>{
     if(!s.sibling_details||assigned.has(s._id))return;
-    const det=s.sibling_details.toLowerCase();
-    const matched=records.filter(o=>o._id!==s._id&&det.includes(o.student_name.toLowerCase()));
+    
+    // Parse sibling_details: split by comma, trim, lowercase for matching
+    const siblingNames=s.sibling_details
+      .split(',')
+      .map(n=>n.trim().toLowerCase())
+      .filter(n=>n.length>0);
+    
+    if(!siblingNames.length)return;
+    
+    // Find exact matches in OTHER records — across ANY grade/section,
+    // since parents often have children in different classes entirely.
+    const matched=records.filter(o=>{
+      if(o._id===s._id||assigned.has(o._id))return false;
+      const oName=o.student_name.toLowerCase().trim();
+      return siblingNames.some(sn=>sn===oName || sn.includes(oName) || oName.includes(sn));
+    });
+    
+    // Create group if siblings found (same class or across classes)
     if(matched.length){
       const id=`SG${String(gi++).padStart(3,'0')}`;
       [s,...matched].forEach(m=>{m.sibling_group=id;m.is_sibling=true;assigned.add(m._id);});
       siblingGroups.push({id,members:[s,...matched]});
+      console.log(`✅ Sibling group ${id}: ${[s,...matched].map(m=>m.student_name).join(', ')}`);
     }
   });
+  
   renderSiblingPreview();
 }
 function renderSiblingPreview(){
@@ -1719,79 +1739,110 @@ function buildDaySlots(startT,endT,b1s,b1e,b1l,b2s,b2e,b2l){
 function generateSchedule(){
   if(!records.length){toast('Upload student data first','error');return;}
   detectSiblings();
+  
+  // Clear previous auto-assignments only. Records with a Special Appointment
+  // (rec.special_appt) are Admin-locked and must NEVER be overwritten by
+  // the generator — they keep whatever timing/status they already have.
+  records.forEach(r => {
+    if(r.special_appt && r.special_appt.time) return; // locked — skip
+    r.timing = '';
+    r.slot_idx = undefined;
+    r.status = '';
+  });
+  
   const startT=document.getElementById('adminStart').value||'08:10';
   const endT=document.getElementById('adminEnd').value||'14:00';
   const startMin=toMin(startT),endMin=toMin(endT);
   const N=Math.floor((endMin-startMin)/10);
   const slotLabel=i=>`${fmtAmPm(fromMin(startMin+i*10))} – ${fmtAmPm(fromMin(startMin+i*10+10))}`;
 
-  const classUsage={},studentCK={},classMap={};
-  records.forEach(r=>{
-    const ck=`${r.grade}|||${r.section}`;
-    if(!classMap[ck])classMap[ck]=[];
-    classMap[ck].push(r);
-    studentCK[r._id]=ck;
-    if(!classUsage[ck])classUsage[ck]=new Map();
+  // Group students by class
+  const byClass = {};
+  records.forEach(r => {
+    const ck = `${r.grade}|||${r.section}`;
+    if(!byClass[ck]) byClass[ck] = [];
+    byClass[ck].push(r);
   });
-  Object.values(classMap).forEach(lst=>lst.sort((a,b)=>String(a.roll_no).localeCompare(String(b.roll_no),undefined,{numeric:true})));
 
-  const sibGroupSlots={};
-  const scheduledIds=new Set();
+  // FIXED ALGORITHM: explicit occupiedSlots tracking guarantees zero
+  // duplicates per class, and sibGroupAssignments is shared across ALL
+  // classes (not reset per class) so siblings in different grades/sections
+  // still get a proper 20+ minute gap.
+  const sibGroupAssignments = {}; // sibling_group id -> last assigned slot idx (any class)
 
-  // STEP 0 — Lock in students with a Special Appointment FIRST.
-  // Their custom time is preserved exactly as set; they are marked as
-  // already-scheduled so the normal slot-picking loop skips them entirely.
-  records.forEach(r=>{
-    if(r.special_appt&&r.special_appt.time){
-      r.timing=r.special_appt.time;
-      r.status='Scheduled';
-      scheduledIds.add(r._id);
-      // If this slot happens to match one of the normal grid slots, mark it
-      // used in that class so others don't get assigned the same label.
-      const ck=studentCK[r._id];
-      const idx=[...Array(N).keys()].find(i=>slotLabel(i)===r.special_appt.time);
-      if(idx!==undefined && ck){
-        const c=classUsage[ck].get(idx)||0;
-        classUsage[ck].set(idx,c+1);
+  Object.entries(byClass).forEach(([classKey, classStudents]) => {
+    const occupiedSlots = new Set(); // slots already taken within THIS class
+
+    // Sort by sibling groups first (so siblings are grouped together), then by roll number
+    classStudents.sort((a,b) => {
+      const aGroup = a.sibling_group || 'zzz'; // non-siblings last
+      const bGroup = b.sibling_group || 'zzz';
+      if(aGroup !== bGroup) return aGroup.localeCompare(bGroup);
+      return String(a.roll_no).localeCompare(String(b.roll_no), undefined, {numeric:true});
+    });
+
+    let cursor = 0; // next candidate slot index for this class
+
+    classStudents.forEach(student => {
+      // Special appointments are Admin-locked — never touch, never consume a normal slot
+      if(student.special_appt && student.special_appt.time) return;
+
+      // If this student belongs to a sibling group that already has an
+      // assignment (possibly from a DIFFERENT class), enforce the 20-min
+      // (2-slot) minimum gap before picking a slot for this student too.
+      if(student.sibling_group && sibGroupAssignments[student.sibling_group] !== undefined){
+        cursor = Math.max(cursor, sibGroupAssignments[student.sibling_group] + 2);
       }
-    }
+
+      // Walk forward to the next genuinely free slot — checking occupiedSlots
+      // explicitly means duplicates are structurally impossible.
+      while(cursor < N && occupiedSlots.has(cursor)) cursor++;
+
+      // Out of capacity for this class
+      if(cursor >= N){
+        console.error(`❌ NO MORE SLOTS for ${student.student_name} in ${classKey}`);
+        student.timing = '';
+        student.slot_idx = undefined;
+        student.status = 'Failed - No slots available';
+        return;
+      }
+
+      // Assign this slot
+      student.timing = slotLabel(cursor);
+      student.slot_idx = cursor;
+      student.status = 'Scheduled';
+      occupiedSlots.add(cursor);
+
+      // Track sibling group's latest assignment (used for gap enforcement
+      // above, including when the next sibling is in another class)
+      if(student.sibling_group){
+        sibGroupAssignments[student.sibling_group] = cursor;
+      }
+
+      console.log(`✅ ${student.student_name} (${student.sibling_group || 'single'}) → Slot ${cursor}: ${slotLabel(cursor)}`);
+
+      // Advance cursor past this slot for the next student
+      cursor++;
+    });
   });
 
-  function pickSlot(ck,sibGid){
-    const used=classUsage[ck];
-    const ordered=[...Array(N).keys()].sort((a,b)=>(used.get(a)||0)-(used.get(b)||0));
-    if(sibGid&&sibGroupSlots[sibGid]&&sibGroupSlots[sibGid].length){
-      const ss=sibGroupSlots[sibGid];
-      for(const idx of ordered){const gaps=ss.map(s=>Math.abs(idx-s));if(gaps.every(g=>g>=2&&g<=3))return idx;}
-      for(const idx of ordered){const gaps=ss.map(s=>Math.abs(idx-s));if(gaps.every(g=>g>=2))return idx;}
-      for(const idx of ordered){const gaps=ss.map(s=>Math.abs(idx-s));if(gaps.every(g=>g>=1))return idx;}
-    }
-    return ordered[0];
-  }
-  function assign(s,idx){
-    const ck=studentCK[s._id];
-    s.timing=slotLabel(idx); s.slot_idx=idx; s.status='Scheduled';
-    const c=classUsage[ck].get(idx)||0; classUsage[ck].set(idx,c+1);
-    if(s.sibling_group){if(!sibGroupSlots[s.sibling_group])sibGroupSlots[s.sibling_group]=[];if(!sibGroupSlots[s.sibling_group].includes(idx))sibGroupSlots[s.sibling_group].push(idx);}
-    scheduledIds.add(s._id);
-  }
+  // Count results
+  const scheduled = records.filter(r => r.status === 'Scheduled').length;
+  const failed = records.filter(r => r.status && r.status.includes('Failed')).length;
 
-  siblingGroups.forEach(g=>{
-    const sorted=[...g.members].sort((a,b)=>(classMap[studentCK[a._id]]||[]).length-(classMap[studentCK[b._id]]||[]).length);
-    sorted.forEach(s=>{if(!scheduledIds.has(s._id))assign(s,pickSlot(studentCK[s._id],s.sibling_group));});
-  });
-  Object.entries(classMap).forEach(([ck,students])=>{
-    students.forEach(s=>{if(!scheduledIds.has(s._id))assign(s,pickSlot(ck,null));});
-  });
-
-  renderAdminTable(); updateMetrics(); renderSiblingPreview();
-  persistRecords(); // save scheduled timings
+  renderAdminTable(); 
+  updateMetrics(); 
+  renderSiblingPreview();
+  persistRecords();
   if(!document.getElementById('classLinksPanel').classList.contains('hidden')) renderClassLinksList();
-  const sch=records.filter(r=>r.timing).length;
-  const specialCount=records.filter(r=>r.special_appt&&r.special_appt.time).length;
-  const specialNote=specialCount>0?` · ⭐ ${specialCount} special appointment(s) preserved`:'';
-  document.getElementById('scheduleStatus').textContent=`✓ ${sch} students scheduled across ${Object.keys(classMap).length} classes. No duplicates within class · Sibling gaps ≥20 min ✓${specialNote}`;
-  toast('Schedule generated! Sibling timings now visible in the Sibling Groups panel.','success');
+
+  document.getElementById('scheduleStatus').textContent = `✓ ${scheduled} students scheduled · ${failed > 0 ? '⚠️ ' + failed + ' failed' : 'ZERO DUPLICATES ✓'} · Sibling gaps enforced`;
+  
+  if(failed > 0){
+    toast(`⚠️ SCHEDULED ${scheduled} but ${failed} students FAILED (not enough time slots)`, 'warning');
+  } else {
+    toast(`✅ PERFECT! ${scheduled} students scheduled with ZERO duplicates`, 'success');
+  }
 }
 
 // ═══════════════════════════════════════════
