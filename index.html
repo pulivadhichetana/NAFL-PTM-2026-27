@@ -1816,11 +1816,11 @@ function generateSchedule(){
   if(!records.length){toast('Upload student data first','error');return;}
   detectSiblings();
   
-  // Clear all previous assignments
+  // STEP 0: Clear ALL old assignments
   records.forEach(r => {
-    r.timing = '';
-    r.slot_idx = undefined;
-    r.status = '';
+    delete r.timing;
+    delete r.slot_idx;
+    delete r.status;
   });
   
   const startT=document.getElementById('adminStart').value||'08:10';
@@ -1829,7 +1829,9 @@ function generateSchedule(){
   const N=Math.floor((endMin-startMin)/10);
   const slotLabel=i=>`${fmtAmPm(fromMin(startMin+i*10))} – ${fmtAmPm(fromMin(startMin+i*10+10))}`;
 
-  // Group students by class
+  console.log(`\n${'='.repeat(70)}\n🔄 SCHEDULE GENERATION\nStart: ${startT} | End: ${endT} | Slots/class: ${N} | Students: ${records.length}\n${'='.repeat(70)}`);
+  
+  // Group by class
   const byClass = {};
   records.forEach(r => {
     const ck = `${r.grade}|||${r.section}`;
@@ -1837,97 +1839,65 @@ function generateSchedule(){
     byClass[ck].push(r);
   });
 
-  console.log(`\n🔄 SCHEDULE GENERATION STARTED`);
-  console.log(`Total classes: ${Object.keys(byClass).length}`);
-  console.log(`Total students: ${records.length}`);
-  console.log(`Available slots per class: ${N}`);
-  
-  // Bulletproof algorithm for each class
-  Object.entries(byClass).forEach(([classKey, classStudents]) => {
-    console.log(`\n📚 Processing class: ${classKey}`);
+  let totalScheduled = 0;
+  let totalFailed = 0;
+  const dups = [];
+
+  // Each class is processed COMPLETELY independently
+  Object.entries(byClass).forEach(([classKey, students]) => {
+    const usedSlots = new Set();
+    const sibGap = {};
     
-    // CRITICAL: Track which student is in which slot FOR THIS CLASS
-    const slotStudents = {}; // slotStudents[0] = student object, slotStudents[1] = another student, etc
-    const siblingLastSlot = {}; // siblingLastSlot['SG026'] = 3 (last slot this sibling group used)
-    
-    // Sort students
-    classStudents.sort((a,b) => {
-      const ag = a.sibling_group || 'ZZZZZ';
-      const bg = b.sibling_group || 'ZZZZZ';
+    students.sort((a,b) => {
+      const ag = a.sibling_group || 'ZZZZ';
+      const bg = b.sibling_group || 'ZZZZ';
       if(ag !== bg) return ag.localeCompare(bg);
-      return String(a.roll_no).localeCompare(String(b.roll_no), undefined, {numeric: true});
+      return String(a.roll_no).localeCompare(String(b.roll_no), undefined, {numeric:true});
     });
 
-    // Assign each student
-    classStudents.forEach(student => {
-      let assigned = false;
-      
-      // Try to find an available slot
-      for(let slotIdx = 0; slotIdx < N; slotIdx++){
-        
-        // CHECK 1: Is this slot already taken?
-        if(slotStudents[slotIdx]){
-          console.log(`   ⏭️  ${student.student_name}: Slot ${slotIdx} occupied (${slotStudents[slotIdx].student_name}), skip`);
-          continue; // Slot occupied, try next
+    students.forEach(st => {
+      let found = false;
+      for(let slot = 0; slot < N; slot++){
+        if(usedSlots.has(slot)) continue;
+        if(st.sibling_group && sibGap[st.sibling_group] !== undefined){
+          if(Math.abs(slot - sibGap[st.sibling_group]) < 2) continue;
         }
-        
-        // CHECK 2: If sibling, check gap requirement
-        if(student.sibling_group){
-          const lastSlot = siblingLastSlot[student.sibling_group];
-          if(lastSlot !== undefined){
-            const gap = Math.abs(slotIdx - lastSlot);
-            if(gap < 2){
-              console.log(`   ⏭️  ${student.student_name}: Gap too small (${gap} < 2), skip slot ${slotIdx}`);
-              continue; // Gap too small
-            }
-          }
-        }
-        
-        // THIS SLOT IS GOOD - ASSIGN
-        slotStudents[slotIdx] = student; // CRITICAL: Mark slot as occupied
-        student.slot_idx = slotIdx;
-        student.timing = slotLabel(slotIdx);
-        student.status = 'Scheduled';
-        assigned = true;
-        
-        if(student.sibling_group){
-          siblingLastSlot[student.sibling_group] = slotIdx;
-        }
-        
-        console.log(`   ✅ ${student.student_name} (${student.sibling_group || 'single'}) → Slot ${slotIdx}: ${slotLabel(slotIdx)}`);
-        break; // Found slot, move to next student
+        usedSlots.add(slot);
+        st.timing = slotLabel(slot);
+        st.slot_idx = slot;
+        st.status = 'Scheduled';
+        if(st.sibling_group) sibGap[st.sibling_group] = slot;
+        totalScheduled++;
+        found = true;
+        break;
       }
-      
-      if(!assigned){
-        student.status = 'Failed - No slots';
-        console.log(`   ❌ ${student.student_name} - NO AVAILABLE SLOT`);
-      }
+      if(!found) {st.status = 'Failed'; totalFailed++;}
     });
+
+    const slotMap = {};
+    students.forEach(s => {
+      if(s.timing) {if(!slotMap[s.timing]) slotMap[s.timing]=[]; slotMap[s.timing].push(s);}
+    });
+    Object.entries(slotMap).forEach(([t,ss]) => {if(ss.length>1) dups.push({c:classKey,t,s:ss.map(x=>x.student_name)});});
   });
 
-  console.log(`\n✅ SCHEDULE GENERATION COMPLETE`);
-  
-  renderAdminTable(); 
-  updateMetrics(); 
+  console.log(`\n✅ RESULT: ${totalScheduled} OK, ${totalFailed} failed, ${dups.length} duplicates\n${'='.repeat(70)}\n`);
+
+  renderAdminTable();
+  updateMetrics();
   renderSiblingPreview();
   persistRecords();
   if(!document.getElementById('classLinksPanel').classList.contains('hidden')) renderClassLinksList();
 
-  const scheduled = records.filter(r => r.status === 'Scheduled').length;
-  const failed = records.filter(r => r.status && r.status.includes('Failed')).length;
+  document.getElementById('scheduleStatus').textContent = `✓ ${totalScheduled} scheduled · ${dups.length > 0 ? '❌ ' + dups.length + ' duplicates' : '✅ ZERO DUPLICATES'}`;
   
-  // RUN AUDIT
-  console.log(`\n🔍 RUNNING AUDIT...`);
-  const dupCount = auditSchedule();
-  
-  document.getElementById('scheduleStatus').textContent = `✓ ${scheduled} scheduled · ${failed > 0 ? '⚠️ ' + failed + ' failed' : 'ZERO DUPLICATES ✓'} · ${dupCount > 0 ? '❌ ' + dupCount + ' classes with duplicates' : '✅ NO DUPLICATES'}`;
-  
-  if(dupCount > 0){
-    toast(`⚠️ DUPLICATES DETECTED! Check console for details`, 'warning');
-  } else if(failed > 0){
-    toast(`⚠️ ${scheduled} scheduled, ${failed} failed (not enough slots)`, 'warning');
+  if(dups.length > 0){
+    console.log('❌ DUPLICATES:', dups);
+    toast(`❌ ${dups.length} DUPLICATES FOUND`, 'error');
+  } else if(totalFailed > 0){
+    toast(`⚠️ ${totalScheduled} OK, ${totalFailed} failed`, 'warning');
   } else {
-    toast(`✅ PERFECT! ${scheduled} students, ZERO DUPLICATES`, 'success');
+    toast(`✅ ${totalScheduled} scheduled - PERFECT`, 'success');
   }
 }
 }
