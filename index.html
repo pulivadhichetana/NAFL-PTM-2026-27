@@ -1552,38 +1552,64 @@ function showFailSection(){
 // SIBLING DETECTION
 // ═══════════════════════════════════════════
 function detectSiblings(){
+  console.log(`\n🔍 SIBLING DETECTION STARTING...`);
+  
   siblingGroups=[];
   records.forEach(r=>{r.sibling_group='';r.is_sibling=false;});
   const assigned=new Set();
   let gi=1;
   
+  // Count how many students have sibling_details
+  const withSiblingDetails = records.filter(r => r.sibling_details && r.sibling_details.trim().length > 0);
+  console.log(`   Students with sibling_details: ${withSiblingDetails.length} / ${records.length}`);
+  
   records.forEach(s=>{
     if(!s.sibling_details||assigned.has(s._id))return;
     
+    const details = s.sibling_details.trim();
+    if(!details)return;
+    
+    console.log(`\n   Processing: ${s.student_name} (${s.grade} ${s.section})`);
+    console.log(`   Sibling details: "${details}"`);
+    
     // Parse sibling_details: split by comma, trim, lowercase for matching
-    const siblingNames=s.sibling_details
+    const siblingNames = details
       .split(',')
       .map(n=>n.trim().toLowerCase())
       .filter(n=>n.length>0);
     
+    console.log(`   Parsed names: ${siblingNames.join(', ')}`);
+    
     if(!siblingNames.length)return;
     
-    // Find exact matches in OTHER records (same class only to avoid cross-class conflicts!)
+    // Find exact matches in OTHER records (ANY class - siblings can be in different classes!)
     const matched=records.filter(o=>{
       if(o._id===s._id||assigned.has(o._id))return false;
-      if(o.grade!==s.grade||o.section!==s.section)return false; // Same class only!
+      // DON'T require same class - siblings might be in different classes
       const oName=o.student_name.toLowerCase().trim();
-      return siblingNames.some(sn=>sn===oName || sn.includes(oName) || oName.includes(sn));
+      const isMatch = siblingNames.some(sn=>sn===oName || sn.includes(oName) || oName.includes(sn));
+      return isMatch;
     });
     
-    // Only create group if siblings found in same class
+    console.log(`   Matches found: ${matched.length}`);
+    matched.forEach(m => console.log(`     - ${m.student_name} (${m.grade} ${m.section})`));
+    
+    // Create group if siblings found
     if(matched.length){
       const id=`SG${String(gi++).padStart(3,'0')}`;
       [s,...matched].forEach(m=>{m.sibling_group=id;m.is_sibling=true;assigned.add(m._id);});
       siblingGroups.push({id,members:[s,...matched]});
-      console.log(`✅ Sibling group ${id}: ${[s,...matched].map(m=>m.student_name).join(', ')}`);
+      console.log(`   ✅ Created group ${id}: ${[s,...matched].map(m=>m.student_name).join(', ')}`);
+    } else {
+      console.log(`   ❌ No matches found for this student`);
     }
   });
+  
+  console.log(`\n═════════════════════════════════════════════════════════════`);
+  console.log(`✅ SIBLING DETECTION COMPLETE`);
+  console.log(`   Total sibling groups created: ${siblingGroups.length}`);
+  console.log(`   Total students with siblings: ${assigned.size}`);
+  console.log(`═════════════════════════════════════════════════════════════\n`);
   
   renderSiblingPreview();
 }
