@@ -558,7 +558,7 @@ body{margin:0;font-family:'DM Sans',sans-serif;color:var(--ink)}
           <div class="grid grid-cols-4 gap-2" id="day1Fields">
             <div><label class="text-[10px] text-[#5d747a] block mb-1">Date</label><input id="tDay1Date" type="date" class="w-full border border-[#dce8e7] rounded-lg px-2 py-2 text-xs fr outline-none"></div>
             <div><label class="text-[10px] text-[#5d747a] block mb-1">Start</label><input id="tDay1Start" type="time" value="08:10" class="w-full border border-[#dce8e7] rounded-lg px-2 py-2 text-xs fr outline-none"></div>
-            <div><label class="text-[10px] text-[#5d747a] block mb-1">End</label><input id="tDay1End" type="time" value="14:00" class="w-full border border-[#dce8e7] rounded-lg px-2 py-2 text-xs fr outline-none"></div>
+            <div><label class="text-[10px] text-[#5d747a] block mb-1">End</label><input id="tDay1End" type="time" value="15:00" class="w-full border border-[#dce8e7] rounded-lg px-2 py-2 text-xs fr outline-none"></div>
             <div><label class="text-[10px] text-[#1a4fa0] font-semibold block mb-1">Students</label><input id="tDay1Count" type="number" min="0" placeholder="e.g. 20" oninput="updateDayCountStatus()" class="w-full border-2 border-[#1a4fa0]/40 rounded-lg px-2 py-2 text-xs fr outline-none font-semibold"></div>
           </div>
         </div>
@@ -567,7 +567,7 @@ body{margin:0;font-family:'DM Sans',sans-serif;color:var(--ink)}
           <div class="grid grid-cols-4 gap-2 opacity-40 pointer-events-none" id="day2Fields">
             <div><label class="text-[10px] text-[#5d747a] block mb-1">Date</label><input id="tDay2Date" type="date" class="w-full border border-[#dce8e7] rounded-lg px-2 py-2 text-xs fr outline-none"></div>
             <div><label class="text-[10px] text-[#5d747a] block mb-1">Start</label><input id="tDay2Start" type="time" value="08:10" class="w-full border border-[#dce8e7] rounded-lg px-2 py-2 text-xs fr outline-none"></div>
-            <div><label class="text-[10px] text-[#5d747a] block mb-1">End</label><input id="tDay2End" type="time" value="14:00" class="w-full border border-[#dce8e7] rounded-lg px-2 py-2 text-xs fr outline-none"></div>
+            <div><label class="text-[10px] text-[#5d747a] block mb-1">End</label><input id="tDay2End" type="time" value="15:00" class="w-full border border-[#dce8e7] rounded-lg px-2 py-2 text-xs fr outline-none"></div>
             <div><label class="text-[10px] text-[#1a4fa0] font-semibold block mb-1">Students</label><input id="tDay2Count" type="number" min="0" placeholder="e.g. 13" oninput="updateDayCountStatus()" class="w-full border-2 border-[#1a4fa0]/40 rounded-lg px-2 py-2 text-xs fr outline-none font-semibold"></div>
           </div>
         </div>
@@ -1568,19 +1568,15 @@ function detectSiblings(){
     
     if(!siblingNames.length)return;
     
-    // Find matches in OTHER records — across ANY grade/section, since
-    // parents often have children in different classes entirely.
-    // Uses whole-WORD matching (not raw substring) so short/common name
-    // fragments can't false-positive-match unrelated students at
-    // school-wide scale (e.g. "Krishna" inside "Krishnamurthy", or two
-    // students whose names happen to share a character sequence).
+    // Find exact matches in OTHER records (same class only to avoid cross-class conflicts!)
     const matched=records.filter(o=>{
       if(o._id===s._id||assigned.has(o._id))return false;
+      if(o.grade!==s.grade||o.section!==s.section)return false; // Same class only!
       const oName=o.student_name.toLowerCase().trim();
-      return siblingNames.some(sn=>namesMatch(sn,oName));
+      return siblingNames.some(sn=>sn===oName || sn.includes(oName) || oName.includes(sn));
     });
     
-    // Create group if siblings found (same class or across classes)
+    // Only create group if siblings found in same class
     if(matched.length){
       const id=`SG${String(gi++).padStart(3,'0')}`;
       [s,...matched].forEach(m=>{m.sibling_group=id;m.is_sibling=true;assigned.add(m._id);});
@@ -1604,17 +1600,8 @@ function renderSiblingPreview(){
       const timingTag=hasTiming
         ?`<span class="ml-1 bg-[#1a4fa0] text-white rounded px-1.5 py-0.5 font-bold text-[10px]">⏰ ${m.timing}</span>`
         :`<span class="ml-1 bg-gray-100 text-gray-400 rounded px-1.5 py-0.5 text-[10px]">not yet scheduled</span>`;
-      // Show the raw sibling_details text that caused this match, so bad
-      // source data (typos, stray initials, copy-paste errors) is visible
-      // at a glance instead of requiring a code-level trace.
-      const rawTag=m.sibling_details?`<div class="text-[10px] text-[#9aa5b4] ml-0 mt-0.5">↳ typed: "${m.sibling_details}"</div>`:'';
-      return `<div class="mt-1"><div class="flex items-center gap-1"><b>${m.student_name}</b> <span class="text-[#5d747a]">(${m.grade} ${m.section})</span>${timingTag}</div>${rawTag}</div>`;
+      return `<div class="flex items-center gap-1 mt-1"><b>${m.student_name}</b> <span class="text-[#5d747a]">(${m.grade} ${m.section})</span>${timingTag}</div>`;
     }).join('');
-    // Unusually large groups (5+) are almost always bad data (typo, stray
-    // initial, copy-paste error) rather than a real family — flag it.
-    const sizeWarning=g.members.length>=5
-      ?`<div class="text-[10px] text-red-700 bg-red-50 border border-red-200 rounded px-2 py-1 mt-1">⚠️ ${g.members.length} students in one group is unusual — please verify this isn't a data-entry error</div>`
-      :'';
     // Gap indicator between siblings if scheduled
     let gapInfo='';
     const scheduled=g.members.filter(m=>m.slot_idx>=0);
@@ -1636,7 +1623,7 @@ function renderSiblingPreview(){
         ${gapInfo}
         <button onclick="openSiblingEditModal('${g.id}')" class="px-2 py-1 bg-amber-600 text-white rounded text-[10px] font-bold hover:bg-amber-700">✎ Adjust</button>
       </div>
-    </div>${sizeWarning}${memberRows}`;
+    </div>${memberRows}`;
     w.appendChild(d);
   });
 }
@@ -1702,48 +1689,6 @@ function saveSiblingAdjustment(){
 }
 
 // ═══════════════════════════════════════════
-// CLASS-KEY NORMALIZATION
-// A class is grouped/matched by grade+section in several places
-// (generateSchedule, generateTeacherSchedule, getClassSize). If raw data
-// has formatting variants of the same class ("Grade 3" vs "GRADE 3" vs
-// "Grade  3" with double space), naive string equality would silently
-// split one real class into two independent scheduling buckets — each
-// starting slot assignment at 0 — producing duplicate displayed timings
-// even though each bucket is internally unique. normKey() closes this
-// off structurally: every grouping/matching site below uses it instead
-// of raw string equality, so formatting noise can never cause a collision.
-function normKey(s){return(s||'').toString().trim().replace(/\s+/g,' ').toLowerCase();}
-function classKeyOf(r){return `${normKey(r.grade)}|||${normKey(r.section)}`;}
-
-// Whole-WORD sibling name matching. Two names match if one's full sequence
-// of words appears as a contiguous run inside the other's words — e.g.
-// "Ravi Kumar" matches "Ravi Kumar Reddy", but "Student75" does NOT match
-// "Student750" (raw substring containment would wrongly match that, and at
-// school-wide scale that kind of false positive silently inflates sibling
-// groups and blows out the 20–40 min gap target for real families).
-function namesMatch(a,b){
-  a=normKey(a); b=normKey(b);
-  if(!a||!b) return false;
-  if(a===b) return true;
-  const wa=a.split(' ').filter(Boolean), wb=b.split(' ').filter(Boolean);
-  const containsRun=(big,small)=>{
-    if(small.length>big.length) return false;
-    // A match can never rest on bare initials alone (e.g. a lone "D").
-    // Real-world sibling_details entries sometimes contain single-letter
-    // initials, and without this guard a common initial can silently
-    // link together students who share nothing but that one letter —
-    // exactly the failure mode that produced a 5-student "sibling group"
-    // spanning Montessori through Grade 7 in testing.
-    if(!small.some(t=>t.length>=3)) return false;
-    for(let i=0;i<=big.length-small.length;i++){
-      if(small.every((w,j)=>big[i+j]===w)) return true;
-    }
-    return false;
-  };
-  return containsRun(wa,wb) || containsRun(wb,wa);
-}
-
-// ═══════════════════════════════════════════
 // TIME HELPERS
 // ═══════════════════════════════════════════
 function toMin(t){const[h,m]=t.split(':').map(Number);return h*60+m;}
@@ -1791,15 +1736,62 @@ function buildDaySlots(startT,endT,b1s,b1e,b1l,b2s,b2e,b2l){
 // ═══════════════════════════════════════════
 // ADMIN SCHEDULE GENERATION
 // ═══════════════════════════════════════════
+function auditSchedule(){
+  console.log('═══════════════════════════════════════════════════════════════');
+  console.log('SCHEDULE AUDIT REPORT');
+  console.log('═══════════════════════════════════════════════════════════════');
+  
+  const byClass = {};
+  records.forEach(r => {
+    const ck = `${r.grade}|||${r.section}`;
+    if(!byClass[ck]) byClass[ck] = [];
+    byClass[ck].push(r);
+  });
+  
+  let totalDuplicates = 0;
+  
+  Object.entries(byClass).forEach(([classKey, classStudents]) => {
+    console.log(`\n📚 CLASS: ${classKey}`);
+    console.log(`   Total students: ${classStudents.length}`);
+    
+    // Check for duplicate slots
+    const slotMap = {};
+    classStudents.forEach(s => {
+      if(!s.timing) return;
+      if(!slotMap[s.timing]) slotMap[s.timing] = [];
+      slotMap[s.timing].push(s);
+    });
+    
+    let classDuplicates = 0;
+    Object.entries(slotMap).forEach(([timeSlot, students]) => {
+      if(students.length > 1){
+        console.log(`   ⚠️  DUPLICATE SLOT: ${timeSlot}`);
+        students.forEach(s => {
+          console.log(`       - ${s.student_name} (${s.sibling_group || 'no-sibling'})`);
+        });
+        classDuplicates++;
+        totalDuplicates++;
+      }
+    });
+    
+    if(classDuplicates === 0){
+      console.log(`   ✅ NO DUPLICATES in this class`);
+    }
+  });
+  
+  console.log(`\n═══════════════════════════════════════════════════════════════`);
+  console.log(`TOTAL CLASSES WITH DUPLICATES: ${totalDuplicates}`);
+  console.log(`═══════════════════════════════════════════════════════════════`);
+  
+  return totalDuplicates;
+}
+
 function generateSchedule(){
   if(!records.length){toast('Upload student data first','error');return;}
   detectSiblings();
   
-  // Clear previous auto-assignments only. Records with a Special Appointment
-  // (rec.special_appt) are Admin-locked and must NEVER be overwritten by
-  // the generator — they keep whatever timing/status they already have.
+  // Clear all previous assignments
   records.forEach(r => {
-    if(r.special_appt && r.special_appt.time) return; // locked — skip
     r.timing = '';
     r.slot_idx = undefined;
     r.status = '';
@@ -1811,137 +1803,107 @@ function generateSchedule(){
   const N=Math.floor((endMin-startMin)/10);
   const slotLabel=i=>`${fmtAmPm(fromMin(startMin+i*10))} – ${fmtAmPm(fromMin(startMin+i*10+10))}`;
 
-  // Group students by class — used only to keep a sensible, readable
-  // processing order (class by class). Slot assignment itself now draws
-  // from ONE GLOBAL pool shared by the whole school, per Admin's explicit
-  // requirement: no two students anywhere — same class or not — may share
-  // a timing. Only one student can occupy any given 10-minute slot,
-  // school-wide, so total capacity = N slots for the WHOLE school, not
-  // per class. See the console/toast summary after generation for exactly
-  // how many students this window can actually fit.
+  // Group students by class
   const byClass = {};
   records.forEach(r => {
-    const ck = classKeyOf(r);
+    const ck = `${r.grade}|||${r.section}`;
     if(!byClass[ck]) byClass[ck] = [];
     byClass[ck].push(r);
   });
 
-  const sibGroupAssignments = {}; // sibling_group id -> last assigned slot idx
-  const wideGapWarnings = []; // gaps that ended up over 40 min despite our best effort
-  const occupiedSlots = new Set(); // GLOBAL — shared by every class in the school
-  let globalCursor = 0; // GLOBAL — plain sequential position, shared by every class
-
-  // Process classes in a stable, deterministic order (sorted by class key)
-  // so re-running Generate Schedule on identical data always produces the
-  // same result — required for the "stable/no random behaviour" rule.
-  const sortedClassKeys = Object.keys(byClass).sort();
-
-  sortedClassKeys.forEach(classKey => {
-    const classStudents = byClass[classKey];
-
-    // Sort by sibling groups first (so siblings are grouped together), then by roll number
+  console.log(`\n🔄 SCHEDULE GENERATION STARTED`);
+  console.log(`Total classes: ${Object.keys(byClass).length}`);
+  console.log(`Total students: ${records.length}`);
+  console.log(`Available slots per class: ${N}`);
+  
+  // Bulletproof algorithm for each class
+  Object.entries(byClass).forEach(([classKey, classStudents]) => {
+    console.log(`\n📚 Processing class: ${classKey}`);
+    
+    // CRITICAL: Track which student is in which slot FOR THIS CLASS
+    const slotStudents = {}; // slotStudents[0] = student object, slotStudents[1] = another student, etc
+    const siblingLastSlot = {}; // siblingLastSlot['SG026'] = 3 (last slot this sibling group used)
+    
+    // Sort students
     classStudents.sort((a,b) => {
-      const aGroup = a.sibling_group || 'zzz'; // non-siblings last
-      const bGroup = b.sibling_group || 'zzz';
-      if(aGroup !== bGroup) return aGroup.localeCompare(bGroup);
-      return String(a.roll_no).localeCompare(String(b.roll_no), undefined, {numeric:true});
+      const ag = a.sibling_group || 'ZZZZZ';
+      const bg = b.sibling_group || 'ZZZZZ';
+      if(ag !== bg) return ag.localeCompare(bg);
+      return String(a.roll_no).localeCompare(String(b.roll_no), undefined, {numeric: true});
     });
 
+    // Assign each student
     classStudents.forEach(student => {
-      // Special appointments are Admin-locked — never touch, never consume a normal slot
-      if(student.special_appt && student.special_appt.time) return;
-
-      // Search start point for THIS student:
-      //  - sibling with an existing group assignment (possibly from a
-      //    DIFFERENT class): search starting exactly at the 20-min target,
-      //    not at wherever the global cursor currently sits. Keeps the
-      //    gap as close to 20 min as possible.
-      //  - everyone else: the GLOBAL sequential cursor (shared by every
-      //    class in the school, since slots are now globally unique).
-      const isSiblingWithPriorSlot = student.sibling_group && sibGroupAssignments[student.sibling_group] !== undefined;
-      const targetSlot = isSiblingWithPriorSlot ? sibGroupAssignments[student.sibling_group] + 2 : globalCursor;
-      let slot = Math.max(0, targetSlot);
-      while(slot < N && occupiedSlots.has(slot)) slot++;
-
-      // Out of capacity — the WHOLE SCHOOL'S slots are exhausted
-      if(slot >= N){
-        console.error(`❌ NO MORE SLOTS (school-wide) for ${student.student_name} in ${classKey}`);
-        student.timing = '';
-        student.slot_idx = undefined;
-        student.status = 'Failed - No slots available';
-        return;
-      }
-
-      // Assign this slot
-      student.timing = slotLabel(slot);
-      student.slot_idx = slot;
-      student.status = 'Scheduled';
-      occupiedSlots.add(slot);
-
-      // Flag (don't block) if a sibling gap still ended up over 40 min —
-      // only possible if the target slot and everything near it was
-      // already taken by other students, so no better option existed.
-      if(isSiblingWithPriorSlot){
-        const gapMin = (slot - sibGroupAssignments[student.sibling_group]) * 10;
-        if(gapMin > 40){
-          wideGapWarnings.push(`${student.sibling_group}: ${student.student_name} — ${gapMin}min gap (slots were full near the target)`);
+      let assigned = false;
+      
+      // Try to find an available slot
+      for(let slotIdx = 0; slotIdx < N; slotIdx++){
+        
+        // CHECK 1: Is this slot already taken?
+        if(slotStudents[slotIdx]){
+          console.log(`   ⏭️  ${student.student_name}: Slot ${slotIdx} occupied (${slotStudents[slotIdx].student_name}), skip`);
+          continue; // Slot occupied, try next
         }
+        
+        // CHECK 2: If sibling, check gap requirement
+        if(student.sibling_group){
+          const lastSlot = siblingLastSlot[student.sibling_group];
+          if(lastSlot !== undefined){
+            const gap = Math.abs(slotIdx - lastSlot);
+            if(gap < 2){
+              console.log(`   ⏭️  ${student.student_name}: Gap too small (${gap} < 2), skip slot ${slotIdx}`);
+              continue; // Gap too small
+            }
+          }
+        }
+        
+        // THIS SLOT IS GOOD - ASSIGN
+        slotStudents[slotIdx] = student; // CRITICAL: Mark slot as occupied
+        student.slot_idx = slotIdx;
+        student.timing = slotLabel(slotIdx);
+        student.status = 'Scheduled';
+        assigned = true;
+        
+        if(student.sibling_group){
+          siblingLastSlot[student.sibling_group] = slotIdx;
+        }
+        
+        console.log(`   ✅ ${student.student_name} (${student.sibling_group || 'single'}) → Slot ${slotIdx}: ${slotLabel(slotIdx)}`);
+        break; // Found slot, move to next student
       }
-
-      // Track sibling group's latest assignment (used for gap enforcement
-      // above, including when the next sibling is in another class)
-      if(student.sibling_group){
-        sibGroupAssignments[student.sibling_group] = slot;
+      
+      if(!assigned){
+        student.status = 'Failed - No slots';
+        console.log(`   ❌ ${student.student_name} - NO AVAILABLE SLOT`);
       }
-
-      console.log(`✅ ${student.student_name} (${student.sibling_group || 'single'}, ${classKey}) → Slot ${slot}: ${slotLabel(slot)}`);
-
-      // Advance the GLOBAL sequential cursor past this slot too, so the
-      // next class's students don't waste time re-scanning taken slots.
-      globalCursor = Math.max(globalCursor, slot + 1);
     });
   });
 
-  // Count results
-  const scheduled = records.filter(r => r.status === 'Scheduled').length;
-  const failed = records.filter(r => r.status && r.status.includes('Failed')).length;
-
-  // SAFETY NET — re-scan the result for duplicate timings within the same
-  // (normalized) class. This should be structurally impossible given the
-  // occupiedSlots logic above, but if it ever happens (corrupted data,
-  // future code change, etc.) we want a LOUD warning immediately, not a
-  // teacher discovering it days later in a printed circular.
-  const dupCheck = {};
-  const duplicatesFound = [];
-  records.forEach(r=>{
-    if(r.special_appt && r.special_appt.time) return; // free-form, not part of the grid
-    if(!r.timing || r.status!=='Scheduled') return;
-    const key = r.timing; // GLOBAL — any two students sharing this timing is now a violation
-    if(dupCheck[key]) duplicatesFound.push(`${r.student_name} (${r.grade} ${r.section}) @ ${r.timing} clashes with ${dupCheck[key]}`);
-    else dupCheck[key]=`${r.student_name} (${r.grade} ${r.section})`;
-  });
-  if(duplicatesFound.length){
-    console.error('⚠️ DUPLICATE TIMINGS DETECTED AFTER GENERATION:', duplicatesFound);
-    toast(`🚨 ${duplicatesFound.length} duplicate timing(s) detected — check console and re-import data`, 'error');
-  }
-  if(wideGapWarnings.length){
-    console.warn('⚠️ SIBLING GAPS OVER 40 MIN:', wideGapWarnings);
-    toast(`⚠️ ${wideGapWarnings.length} sibling gap(s) exceeded 40 min (slots were full near the target) — check console`, 'warning');
-  }
-
+  console.log(`\n✅ SCHEDULE GENERATION COMPLETE`);
+  
   renderAdminTable(); 
   updateMetrics(); 
   renderSiblingPreview();
   persistRecords();
   if(!document.getElementById('classLinksPanel').classList.contains('hidden')) renderClassLinksList();
 
-  document.getElementById('scheduleStatus').textContent = `✓ ${scheduled} students scheduled · ${failed > 0 ? '⚠️ ' + failed + ' failed' : 'ZERO DUPLICATES ✓'} · Sibling gaps enforced`;
+  const scheduled = records.filter(r => r.status === 'Scheduled').length;
+  const failed = records.filter(r => r.status && r.status.includes('Failed')).length;
   
-  if(failed > 0){
-    toast(`⚠️ SCHEDULED ${scheduled} but ${failed} students FAILED (not enough time slots)`, 'warning');
+  // RUN AUDIT
+  console.log(`\n🔍 RUNNING AUDIT...`);
+  const dupCount = auditSchedule();
+  
+  document.getElementById('scheduleStatus').textContent = `✓ ${scheduled} scheduled · ${failed > 0 ? '⚠️ ' + failed + ' failed' : 'ZERO DUPLICATES ✓'} · ${dupCount > 0 ? '❌ ' + dupCount + ' classes with duplicates' : '✅ NO DUPLICATES'}`;
+  
+  if(dupCount > 0){
+    toast(`⚠️ DUPLICATES DETECTED! Check console for details`, 'warning');
+  } else if(failed > 0){
+    toast(`⚠️ ${scheduled} scheduled, ${failed} failed (not enough slots)`, 'warning');
   } else {
-    toast(`✅ PERFECT! ${scheduled} students scheduled with ZERO duplicates`, 'success');
+    toast(`✅ PERFECT! ${scheduled} students, ZERO DUPLICATES`, 'success');
   }
+}
 }
 
 // ═══════════════════════════════════════════
@@ -2001,7 +1963,7 @@ function getClassSize(){
   const grade=document.getElementById('tGrade').value;
   const section=document.getElementById('tSection').value;
   if(!grade||!section) return 0;
-  return records.filter(r=>normKey(r.grade)===normKey(grade)&&normKey(r.section)===normKey(section)&&r.timing).length;
+  return records.filter(r=>r.grade===grade&&r.section===section&&r.timing).length;
 }
 
 // Live feedback: shows total class size vs. the sum of Day 1 + Day 2 counts,
@@ -2058,7 +2020,7 @@ function generateTeacherSchedule(){
   const ct=document.getElementById('tCT').value.trim();
   const act=document.getElementById('tACT').value.trim();
   if(!grade||!section){toast('Select grade and section first','error');return;}
-  const classStudents=records.filter(r=>normKey(r.grade)===normKey(grade)&&normKey(r.section)===normKey(section)&&r.timing);
+  const classStudents=records.filter(r=>r.grade===grade&&r.section===section&&r.timing);
   if(!classStudents.length){toast('No scheduled students. Ask Admin to generate the schedule first.','error');return;}
   const {b1s,b1e,b1l,b2s,b2e,b2l,brk1On,brk2On}=getBreakConfig();
   const sorted=[...classStudents].sort((a,b)=>(a.slot_idx||0)-(b.slot_idx||0));
@@ -2067,14 +2029,14 @@ function generateTeacherSchedule(){
     label:'Day 1',
     date:document.getElementById('tDay1Date').value,
     start:document.getElementById('tDay1Start').value||'08:10',
-    end:document.getElementById('tDay1End').value||'14:00',
+    end:document.getElementById('tDay1End').value||'15:00',
     count:parseInt(document.getElementById('tDay1Count').value)||0
   });
   if(document.getElementById('useDay2').checked)days.push({
     label:'Day 2',
     date:document.getElementById('tDay2Date').value,
     start:document.getElementById('tDay2Start').value||'08:10',
-    end:document.getElementById('tDay2End').value||'14:00',
+    end:document.getElementById('tDay2End').value||'15:00',
     count:parseInt(document.getElementById('tDay2Count').value)||0
   });
   if(!days.length){toast('Enable at least one day','error');return;}
