@@ -1805,7 +1805,6 @@ function generateSchedule(){
   if(excludeStart && excludeEnd) {
     const exStartMin = toMin(excludeStart);
     const exEndMin = toMin(excludeEnd);
-    // Mark all slots that overlap with excluded time
     for(let i = 0; i < N; i++) {
       const slotStart = startMin + i*10;
       const slotEnd = slotStart + 10;
@@ -1816,10 +1815,10 @@ function generateSchedule(){
   }
 
   console.log(`\n${'='.repeat(80)}`);
-  console.log(`🔄 GLOBAL SIBLING SCHEDULE v5 - NO SAME-TIME SIBLINGS`);
+  console.log(`🔄 SCHEDULE GENERATION v6.2 - PER-CLASS WITH SIBLING GAPS`);
   console.log(`   Slots: ${N} | Students: ${records.length} | SG Groups: ${siblingGroups.length}`);
   if(excludedSlots.size > 0) {
-    console.log(`   ⏸️ Excluded slots for siblings: ${Array.from(excludedSlots).map(s => slotLabel(s)).join(', ')}`);
+    console.log(`   ⏸️ Excluded for siblings: ${Array.from(excludedSlots).map(s => slotLabel(s)).join(', ')}`);
   }
   console.log(`${'='.repeat(80)}\n`);
 
@@ -1831,11 +1830,8 @@ function generateSchedule(){
   });
 
   let totalScheduled = 0, totalFailed = 0;
-  const globalUsedSlots = new Set();
-
-  // ═ PHASE 1: Assign ALL siblings GLOBALLY with proper gaps ═
-  console.log(`📌 PHASE 1: Sibling Assignment (GLOBAL)\n`);
   
+  // Pre-assign sibling groups (enforce gaps WITHIN groups only)
   siblingGroups.forEach(group => {
     const members = group.members || [];
     if(!members.length) return;
@@ -1846,20 +1842,19 @@ function generateSchedule(){
     members.forEach((m, idx) => {
       let slot = -1;
       
-      // Try: >= 2 slot gap from ALL previous siblings in this group
+      // Try: >= 2 slot gap from previous siblings IN THIS GROUP
       if(assignedSlots.length > 0) {
         for(let s = 0; s < N; s++) {
-          if(globalUsedSlots.has(s)) continue;
-          if(excludedSlots.has(s)) continue;  // ← Skip excluded times
+          if(excludedSlots.has(s)) continue;
           const allGapsOk = assignedSlots.every(as => Math.abs(s - as) >= 2);
           if(allGapsOk) { slot = s; break; }
         }
       }
       
-      // Fallback: any free global slot
+      // Fallback: any non-excluded slot
       if(slot === -1) {
         for(let s = 0; s < N; s++) {
-          if(!globalUsedSlots.has(s) && !excludedSlots.has(s)) { slot = s; break; }
+          if(!excludedSlots.has(s)) { slot = s; break; }
         }
       }
       
@@ -1867,28 +1862,24 @@ function generateSchedule(){
         m.timing = slotLabel(slot);
         m.slot_idx = slot;
         m.status = 'Scheduled';
-        globalUsedSlots.add(slot);
         assignedSlots.push(slot);
         totalScheduled++;
         console.log(`      ✓ ${m.student_name} (${m.grade}${m.section}) → Slot ${slot}`);
       } else {
         m.status = 'Failed';
         totalFailed++;
-        console.log(`      ✗ NO SLOT for ${m.student_name}`);
+        console.log(`      ✗ NO SLOT`);
       }
     });
     
     if(assignedSlots.length > 1) {
-      const gaps = [];
-      for(let i=0; i<assignedSlots.length-1; i++) {
-        gaps.push(Math.abs(assignedSlots[i+1] - assignedSlots[i]) * 10);
-      }
+      const gaps = assignedSlots.slice(1).map((s,i) => Math.abs(s - assignedSlots[i]) * 10);
       console.log(`      Gap: ${Math.min(...gaps)}-${Math.max(...gaps)}min\n`);
     }
   });
 
-  // ═ PHASE 2: Assign non-siblings by class ═
-  console.log(`\n👥 PHASE 2: Non-Sibling Assignment (by class)\n`);
+  // Process each class
+  console.log(`\n📚 PROCESSING CLASSES:\n`);
   
   const classSections = {};
   records.forEach(r => {
@@ -1899,22 +1890,29 @@ function generateSchedule(){
 
   Object.keys(classSections).forEach(classKey => {
     const classStudents = classSections[classKey];
-    const nonSiblings = classStudents.filter(s => s.slot_idx === -1);
+    const usedSlots = new Set();
     
-    if(nonSiblings.length === 0) return;
-    console.log(`   ${classKey}: ${nonSiblings.length} students`);
+    console.log(`   ${classKey}: ${classStudents.length} students`);
     
-    nonSiblings.forEach(s => {
+    // Mark already-assigned sibling slots as used in this class
+    classStudents.forEach(s => {
+      if(s.slot_idx !== -1) {
+        usedSlots.add(s.slot_idx);
+      }
+    });
+    
+    // Assign unscheduled students
+    classStudents.filter(s => s.slot_idx === -1).forEach(s => {
       let slot = -1;
       for(let i = 0; i < N; i++) {
-        if(!globalUsedSlots.has(i)) { slot = i; break; }
+        if(!usedSlots.has(i)) { slot = i; break; }
       }
       
       if(slot !== -1) {
         s.timing = slotLabel(slot);
         s.slot_idx = slot;
         s.status = 'Scheduled';
-        globalUsedSlots.add(slot);
+        usedSlots.add(slot);
         totalScheduled++;
       } else {
         s.status = 'Failed';
@@ -1935,7 +1933,7 @@ function generateSchedule(){
   const msg = `✓ ${totalScheduled} scheduled · ${totalFailed ? '⚠️ ' + totalFailed + ' failed' : '✅ OK'}${excludedSlots.size > 0 ? ' · ⏸️ ' + excludedSlots.size + ' slots excluded for siblings' : ''}`;
   document.getElementById('scheduleStatus').textContent = msg;
   
-  toast(totalFailed ? `⚠️ ${totalFailed} students failed` : `✅ Perfect! All scheduled with proper sibling gaps!`,'success');
+  toast(totalFailed ? `⚠️ ${totalFailed} students failed` : `✅ Perfect! All scheduled!`,'success');
 }
 
 // ═══════════════════════════════════════════
