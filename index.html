@@ -1814,11 +1814,8 @@ function generateSchedule(){
   }
 
   console.log(`\n${'='.repeat(80)}`);
-  console.log(`🔄 SCHEDULE GENERATION v6.3 - GLOBAL SIBLING TRACKING`);
+  console.log(`🔄 SCHEDULE v7 - GUARANTEED NO DUPLICATE SIBLING GROUPS`);
   console.log(`   Slots: ${N} | Students: ${records.length} | SG Groups: ${siblingGroups.length}`);
-  if(excludedSlots.size > 0) {
-    console.log(`   ⏸️ Excluded for siblings: ${Array.from(excludedSlots).map(s => slotLabel(s)).join(', ')}`);
-  }
   console.log(`${'='.repeat(80)}\n`);
 
   records.forEach(r => {
@@ -1828,64 +1825,91 @@ function generateSchedule(){
   });
 
   let totalScheduled = 0, totalFailed = 0;
-  const globalSiblingSlots = new Set(); // Track ALL sibling slot assignments globally
   
-  // PHASE 1: Assign ALL siblings globally (no collisions between groups)
-  console.log(`📌 PHASE 1: Global Sibling Assignment\n`);
+  // ════════════════════════════════════════════════════════
+  // PHASE 1: Assign each sibling GROUP a unique slot
+  // (not individual members, but the GROUP itself)
+  // ════════════════════════════════════════════════════════
+  
+  console.log(`📌 PHASE 1: Assign Each Sibling Group Unique Slot\n`);
+  
+  const groupSlotMap = {}; // { 'SG001': 0, 'SG002': 2, ... }
+  const usedGroupSlots = new Set(); // Slots taken by sibling groups
   
   siblingGroups.forEach(group => {
     const members = group.members || [];
     if(!members.length) return;
     
-    const groupSlots = [];
-    console.log(`   ${group.id} (${members.length} members):`);
+    let groupSlot = -1;
     
-    members.forEach((m, idx) => {
-      let slot = -1;
+    // Find a UNIQUE slot for this entire group
+    for(let s = 0; s < N; s++) {
+      if(excludedSlots.has(s)) continue;
+      if(usedGroupSlots.has(s)) continue; // ← This slot taken by another group!
+      groupSlot = s;
+      break;
+    }
+    
+    if(groupSlot !== -1) {
+      usedGroupSlots.add(groupSlot);
+      groupSlotMap[group.id] = groupSlot;
       
-      // Try: >= 2 gap from PREVIOUS siblings IN THIS GROUP
-      if(groupSlots.length > 0) {
-        for(let s = 0; s < N; s++) {
-          if(excludedSlots.has(s)) continue;
-          if(globalSiblingSlots.has(s)) continue; // Skip ANY sibling assignment
-          const allGapsOk = groupSlots.every(gs => Math.abs(s - gs) >= 2);
-          if(allGapsOk) { slot = s; break; }
-        }
-      }
+      // Assign all members of this group to THEIR OWN slots (with gaps)
+      const memberSlots = [groupSlot];
+      let prevSlot = groupSlot;
       
-      // Fallback: any free slot (not used by other sibling groups)
-      if(slot === -1) {
-        for(let s = 0; s < N; s++) {
-          if(!excludedSlots.has(s) && !globalSiblingSlots.has(s)) { 
-            slot = s; 
-            break; 
+      members.forEach((m, idx) => {
+        let memberSlot = -1;
+        
+        if(idx === 0) {
+          // First member gets the group's base slot
+          memberSlot = groupSlot;
+        } else {
+          // Other members get slot with >= 2 gap
+          for(let s = 0; s < N; s++) {
+            if(excludedSlots.has(s)) continue;
+            if(usedGroupSlots.has(s)) continue;
+            if(memberSlots.some(ms => Math.abs(s - ms) < 2)) continue; // Gap check
+            memberSlot = s;
+            break;
           }
         }
-      }
+        
+        if(memberSlot !== -1) {
+          m.timing = slotLabel(memberSlot);
+          m.slot_idx = memberSlot;
+          m.status = 'Scheduled';
+          usedGroupSlots.add(memberSlot);
+          memberSlots.push(memberSlot);
+          totalScheduled++;
+          console.log(`      ✓ ${m.student_name} (${m.grade}${m.section}) → Slot ${memberSlot}`);
+        } else {
+          m.status = 'Failed';
+          totalFailed++;
+          console.log(`      ✗ ${m.student_name} - NO SLOT`);
+        }
+      });
       
-      if(slot !== -1) {
-        m.timing = slotLabel(slot);
-        m.slot_idx = slot;
-        m.status = 'Scheduled';
-        groupSlots.push(slot);
-        globalSiblingSlots.add(slot); // ← GLOBAL tracking!
-        totalScheduled++;
-        console.log(`      ✓ ${m.student_name} (${m.grade}${m.section}) → Slot ${slot}`);
+      if(memberSlots.length > 1) {
+        const gaps = memberSlots.slice(1).map((s,i) => Math.abs(s - memberSlots[i]) * 10);
+        console.log(`   ${group.id}: Base slot ${groupSlot}, Gap: ${Math.min(...gaps)}-${Math.max(...gaps)}min\n`);
       } else {
+        console.log(`   ${group.id}: Base slot ${groupSlot}\n`);
+      }
+    } else {
+      console.log(`   ${group.id}: NO SLOT AVAILABLE\n`);
+      group.members.forEach(m => {
         m.status = 'Failed';
         totalFailed++;
-        console.log(`      ✗ NO SLOT`);
-      }
-    });
-    
-    if(groupSlots.length > 1) {
-      const gaps = groupSlots.slice(1).map((s,i) => Math.abs(s - groupSlots[i]) * 10);
-      console.log(`      Gap: ${Math.min(...gaps)}-${Math.max(...gaps)}min\n`);
+      });
     }
   });
 
+  // ════════════════════════════════════════════════════════
   // PHASE 2: Assign non-siblings per class
-  console.log(`\n👥 PHASE 2: Non-Sibling Assignment (per class)\n`);
+  // ════════════════════════════════════════════════════════
+  
+  console.log(`\n👥 PHASE 2: Non-Sibling Assignment\n`);
   
   const classSections = {};
   records.forEach(r => {
@@ -1898,16 +1922,14 @@ function generateSchedule(){
     const classStudents = classSections[classKey];
     const usedSlots = new Set();
     
-    console.log(`   ${classKey}: ${classStudents.length} students`);
-    
-    // Mark sibling slots as used in this class
+    // Mark all assigned slots as used
     classStudents.forEach(s => {
       if(s.slot_idx !== -1) {
         usedSlots.add(s.slot_idx);
       }
     });
     
-    // Assign unscheduled (non-sibling) students
+    // Assign unscheduled students
     classStudents.filter(s => s.slot_idx === -1).forEach(s => {
       let slot = -1;
       for(let i = 0; i < N; i++) {
@@ -1936,7 +1958,11 @@ function generateSchedule(){
   renderSiblingPreview();
   persistRecords();
 
-  const msg = `✓ ${totalScheduled} scheduled · ${totalFailed ? '⚠️ ' + totalFailed + ' failed' : '✅ OK'}${excludedSlots.size > 0 ? ' · ⏸️ ' + excludedSlots.size + ' slots excluded' : ''}`;
+  const msg = `✓ ${totalScheduled} scheduled · ${totalFailed ? '⚠️ ' + totalFailed + ' failed' : '✅ OK'}${excludedSlots.size > 0 ? ' · ⏸️ ' + excludedSlots.size + ' excluded' : ''}`;
+  document.getElementById('scheduleStatus').textContent = msg;
+  
+  toast(totalFailed ? `⚠️ ${totalFailed} failed` : `✅ All scheduled!`,'success');
+}
   document.getElementById('scheduleStatus').textContent = msg;
   
   toast(totalFailed ? `⚠️ ${totalFailed} students failed` : `✅ Perfect! All scheduled!`,'success');
