@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -1122,125 +1123,64 @@ function downloadSGWisePDF(){
   if(!records.length){toast('No student data','error');return;}
   if(!siblingGroups.length){toast('No sibling groups to export','info');return;}
   
-  const {jsPDF} = window.jspdf;
-  const doc = new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  
-  let yPos = 15;
-  const margin = 12;
-  const colWidth = 45;
-  
-  // Header
-  doc.setFontSize(14);
-  doc.setFont(undefined,'bold');
-  doc.text('NAFL PTM - Sibling Groups (SG) Reference',margin,yPos);
-  
-  yPos += 7;
-  doc.setFontSize(9);
-  doc.setFont(undefined,'normal');
-  doc.text(`Date: ${new Date().toLocaleDateString()} | Total SG: ${siblingGroups.length} | Total SG Students: ${siblingGroups.reduce((s,g)=>(g.members||[]).length+s,0)}`,margin,yPos);
-  
-  yPos += 6;
-  doc.setDrawColor(26,79,160);
-  doc.line(margin,yPos,pageWidth-margin,yPos);
-  yPos += 5;
-  
-  // Process each sibling group
-  siblingGroups.forEach((group,idx)=>{
-    const members = group.members || [];
-    if(members.length === 0) return;
+  try {
+    const {jsPDF} = window.jspdf;
+    const doc = new jsPDF('p','mm','a4');
+    let y = 15;
     
-    // Check if we need new page (leave 35mm for next group)
-    if(yPos > pageHeight - 35){
-      doc.addPage();
-      yPos = 15;
-    }
-    
-    // Group header
-    doc.setFontSize(10);
+    // Header
+    doc.setFontSize(14);
     doc.setFont(undefined,'bold');
-    doc.setFillColor(26,79,160);
-    doc.setTextColor(255,255,255);
-    doc.rect(margin-1,yPos-4.5,pageWidth-2*margin+2,5.5,{F:true});
-    doc.text(`${group.id}  •  ${members.length} Student${members.length>1?'s':''}`,margin+1,yPos);
-    doc.setTextColor(0,0,0);
+    doc.text('NAFL PTM - Sibling Groups Reference',12,y);
     
-    yPos += 7;
-    
-    // Column headers
-    doc.setFontSize(8);
-    doc.setFont(undefined,'bold');
-    doc.setFillColor(240,240,240);
-    doc.rect(margin-0.5,yPos-3.5,62,4,{F:true});
-    doc.text('Student',margin+1,yPos);
-    doc.text('Grade/Sec',margin+45,yPos);
-    doc.text('Time',margin+65,yPos);
-    
-    yPos += 4;
-    doc.setDrawColor(200,200,200);
-    doc.line(margin-0.5,yPos,pageWidth-margin+0.5,yPos);
-    yPos += 3;
-    
-    // Member rows
-    doc.setFontSize(7.5);
+    y += 7;
+    doc.setFontSize(9);
     doc.setFont(undefined,'normal');
+    doc.text(`Generated: ${new Date().toLocaleDateString()} | Total SG: ${siblingGroups.length}`,12,y);
     
-    const slotIndices = [];
-    members.forEach((member,mIdx)=>{
-      const timing = member.timing || '–';
-      const slot = member.slot_idx;
-      if(slot !== undefined) slotIndices.push(slot);
+    y += 8;
+    doc.line(12,y,198,y);
+    y += 6;
+    
+    // Process each SG
+    siblingGroups.forEach((g,idx) => {
+      const members = g.members || [];
+      if(!members.length) return;
       
-      const nameText = (member.student_name || '–').substring(0,40);
-      const gradeText = `${member.grade||'–'} ${member.section||'–'}`;
-      const timeText = timing;
+      // New page if needed
+      if(y > 250) { doc.addPage(); y = 15; }
       
-      doc.text(nameText,margin+1,yPos);
-      doc.text(gradeText,margin+45,yPos);
-      doc.text(timeText,margin+65,yPos);
+      // Group header
+      doc.setFontSize(11);
+      doc.setFont(undefined,'bold');
+      doc.setFillColor(26,79,160);
+      doc.setTextColor(255,255,255);
+      doc.rect(11,y-5,180,7,'F');
+      doc.text(`${g.id} - ${members.length} Student${members.length>1?'s':''}`,13,y);
+      doc.setTextColor(0,0,0);
+      y += 10;
       
-      yPos += 3.5;
+      // Member list
+      doc.setFontSize(8);
+      doc.setFont(undefined,'normal');
+      members.forEach((m,mi) => {
+        const nameText = (m.student_name || '-').substring(0,30);
+        const timeText = m.timing || '-';
+        doc.text(`${mi+1}. ${nameText}`,14,y);
+        doc.text(`${m.grade} ${m.section}`,90,y);
+        doc.text(timeText,140,y);
+        y += 4;
+      });
+      
+      y += 3;
     });
     
-    // Gap info
-    if(slotIndices.length > 1){
-      yPos += 1;
-      doc.setFont(undefined,'italic');
-      doc.setFontSize(7);
-      doc.setTextColor(100,100,100);
-      
-      const gaps = [];
-      for(let i=0;i<slotIndices.length-1;i++){
-        gaps.push(Math.abs(slotIndices[i+1]-slotIndices[i])*10);
-      }
-      const minGap = Math.min(...gaps);
-      const maxGap = Math.max(...gaps);
-      
-      const gapText = gaps.length === 1 ? `Gap: ${gaps[0]}min` : `Gaps: ${minGap}–${maxGap}min`;
-      doc.text(gapText,margin+1,yPos);
-      doc.setTextColor(0,0,0);
-      yPos += 3;
-    } else {
-      yPos += 1;
-    }
-    
-    // Divider
-    doc.setDrawColor(220,220,220);
-    doc.line(margin,yPos,pageWidth-margin,yPos);
-    yPos += 4;
-  });
-  
-  // Footer
-  yPos = pageHeight - 10;
-  doc.setFontSize(7);
-  doc.setFont(undefined,'normal');
-  doc.setTextColor(150,150,150);
-  doc.text(`For admin reference: Edit any student's time if needed. Min gap between siblings: 20 min (2 slots).`,margin,yPos);
-  
-  // Save
-  doc.save(`NAFL_PTM_SG_Reference_${new Date().toISOString().split('T')[0]}.pdf`);
-  toast('✅ SG-wise PDF downloaded for admin reference','success');
+    doc.save(`NAFL_PTM_SG_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast('✅ SG PDF Downloaded','success');
+  } catch(e) {
+    console.error('PDF Error:',e);
+    toast('⚠️ PDF download failed - Try again','error');
+  }
 }
 
 function termLabel(){ return `Term ${SETTINGS.term} · ${SETTINGS.year}`; }
@@ -1860,9 +1800,9 @@ function generateSchedule(){
 
   // Clear all timings first
   records.forEach(r => {
-    delete r.timing;
-    delete r.slot_idx;
-    delete r.status;
+    r.timing = undefined;
+    r.slot_idx = -1;
+    r.status = 'Unscheduled';
   });
 
   // Group by class+section
@@ -1935,7 +1875,7 @@ function generateSchedule(){
     });
 
     // STEP 2: Process remaining (non-sibling) students in this class
-    const nonSiblings = classStudents.filter(s => !s.sibling_group || !s.timing);
+    const nonSiblings = classStudents.filter(s => !s.sibling_group || (s.sibling_group && s.slot_idx === -1));
     if(nonSiblings.length > 0) {
       console.log(`   👥 Non-sibling students (${nonSiblings.length}):`);
       
